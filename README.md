@@ -1,0 +1,298 @@
+# Airport Parking System
+
+Nidaamka maamulka baabuurta ee garoonka diyaaradaha — React Native mobile app + Admin web portal.
+
+## Qaybaha (Components)
+
+| Qayb | Technology | Role |
+|------|-----------|------|
+| **Backend API** | Node.js + Express + MongoDB | Port 3001 |
+| **Mobile App / PWA** | React Native (Expo) | Operator — check-in/out only |
+| **Admin Portal** | React + Vite + Tailwind | Admin — view only + users + pricing |
+
+## Features
+
+### Mobile App (Operator)
+- Check-in / Check-out baabuurta
+- Lacagta iyo waqtiga toos ah
+- Invoice marka check-out la sameeyo
+
+### Admin Portal (View + Manage)
+- **Live View** — Arag baabuurta hadda jira (read-only)
+- **Departed** — Baabuurta baxday / history
+- **Reports** — Daily, weekly, monthly revenue
+- **Invoices** — Arag rasiidhada
+- **Users** — Abuur operator accounts (mobile app)
+- **Pricing** — Qiimaha saacaddii (ETB/hr) iyo magaca facility
+
+## Setup
+
+### 1. Install MongoDB
+
+Hubi in MongoDB uu socdo:
+
+```bash
+# macOS (Homebrew)
+brew services start mongodb-community
+
+# Ama Docker
+docker run -d -p 27017:27017 --name parking-mongo mongo:7
+```
+
+### 2. Install dependencies
+
+```bash
+npm run install:all
+```
+
+### 3. Seed database (default users)
+
+```bash
+npm run backend:seed
+```
+
+Default accounts:
+- **Admin:** `admin@parking.com` / `admin123`
+- **Operator:** `operator@parking.com` / `operator123`
+
+### 4. Start everything (recommended)
+
+Hal amar — backend + admin + mobile (browser):
+
+```bash
+cd /Volumes/O/Parking
+npm run start
+```
+
+| Service | URL |
+|---------|-----|
+| **Backend API** | http://localhost:3001 |
+| **Admin Portal** | http://localhost:5173 |
+| **Mobile / PWA** | http://localhost:8081 |
+
+> **Muhiim:** Ku orod **root folder-ka** `Parking` — ma aha `mobile-app` ama folder kale.
+
+### Start individually (optional)
+
+```bash
+npm run backend    # API only
+npm run admin      # Admin portal only
+npm run mobile:web # Mobile browser only
+```
+
+### 5. Start admin portal (old)
+
+```bash
+npm run admin
+```
+
+Fur browser: http://localhost:5173
+
+### 6. Start mobile app (Expo Go / emulator)
+
+```bash
+npm run mobile
+```
+
+Scan QR code with Expo Go, ama run on Android emulator.
+
+## PWA — Web Installable App
+
+Mobile app-ka waxaa sidoo kale loo isticmaali karaa **browser** oo la **install** gareyn karo (Android, iPhone, Desktop).
+
+### Development (browser)
+
+```bash
+npm run mobile:web
+```
+
+Fur: http://localhost:8081
+
+### Production build
+
+```bash
+npm run mobile:build
+```
+
+Output: `mobile/dist/` — deploy to any static host (Netlify, Vercel, Nginx).
+
+### Install on devices
+
+| Platform | Sida loo install gareeyo |
+|----------|-------------------------|
+| **Android Chrome** | Menu → "Install app" ama banner-ka "Install" |
+| **iPhone Safari** | Share → "Add to Home Screen" |
+| **Desktop Chrome/Edge** | Address bar → Install icon |
+
+### PWA Features
+
+- `manifest.json` — app name, icons, theme
+- `sw.js` — service worker (offline shell + cache)
+- `offline.html` — offline fallback page
+- Responsive design — mobile-first, max 480px on desktop
+- Install prompt banner — Android auto-prompt, iOS instructions
+
+### API URL (Web)
+
+Web-ka API wuxuu automatic u isticmaalaa `http://<hostname>:3001`. Hubi backend inuu socdo.
+
+## Mobile App — APK Build
+
+### Option A: EAS Build (cloud)
+
+```bash
+cd mobile
+npx eas-cli login
+npx eas build --platform android --profile preview
+```
+
+### Option B: Local build
+
+```bash
+cd mobile
+npx expo prebuild
+cd android && ./gradlew assembleRelease
+```
+
+APK: `mobile/android/app/build/outputs/apk/release/app-release.apk`
+
+### API URL for real device
+
+Edit `mobile/app.json` → `extra.apiUrl` to your server IP:
+
+```json
+"extra": {
+  "apiUrl": "http://192.168.1.100:3001"
+}
+```
+
+For Android emulator, use `http://10.0.2.2:3001`.
+
+## MongoDB Configuration
+
+Default connection: `mongodb://127.0.0.1:27017/airport_parking`
+
+To use a custom URI, copy `.env.example` to `.env`:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/airport_parking
+```
+
+For MongoDB Atlas (cloud), set `MONGODB_URI` to your Atlas connection string.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login |
+| GET | `/api/parking/stats` | Dashboard stats |
+| GET | `/api/parking/active` | Active sessions |
+| POST | `/api/parking/check-in` | Check in vehicle |
+| POST | `/api/parking/check-out/:id` | Check out + generate invoice |
+| GET | `/api/parking/history` | Session history |
+| GET | `/api/invoices` | List invoices |
+| GET | `/api/reports/:period` | daily/weekly/monthly reports |
+| GET/PUT | `/api/settings` | Parking settings |
+| GET/POST/DELETE | `/api/users` | User management (admin) |
+
+## Fee Calculation
+
+Lacagta waxaa loo xisaabiyaa saacad kasta oo la bilaabay:
+- 1 daqiiqo = 1 saacad = ETB 50
+- 1 saacad 5 daqiiqo = 2 saacadood = ETB 100
+- 3 saacadood = ETB 150
+
+Admin wuxuu beddeli karaa qiimaha saacaddii Settings → Hourly rate.
+
+## Server Deploy (Docker)
+
+Ku shub server-ka (VPS) — hal amar, wax walba waa isku socdaan.
+
+### Shuruudaha server-ka
+
+- **Ubuntu 22+** ama Debian (VPS: DigitalOcean, Hetzner, AWS, etc.)
+- **Docker** + **Docker Compose** installed
+- Port **80** furan (HTTP)
+
+### 1. Upload project to server
+
+```bash
+# On your Mac — copy to server (beddel IP-ga)
+scp -r /Volumes/O/Parking user@YOUR_SERVER_IP:/opt/parking
+
+# SSH into server
+ssh user@YOUR_SERVER_IP
+cd /opt/parking
+```
+
+Ama isticmaal `git clone` haddii repo GitHub ku jiro.
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+**Muhiim:** Beddel `JWT_SECRET` — password random ah oo dheer.
+
+### 3. Deploy
+
+```bash
+npm run deploy
+```
+
+Ama manually:
+
+```bash
+docker compose up -d --build
+docker compose --profile seed run --rm seed
+```
+
+### 4. Fur browser-ka
+
+| Service | URL |
+|---------|-----|
+| **Admin Portal** | `http://YOUR_SERVER_IP/` |
+| **Mobile / PWA** | `http://YOUR_SERVER_IP/m/` |
+| **API Health** | `http://YOUR_SERVER_IP/api/health` |
+
+Default login:
+- Admin: `admin@parking.com` / `admin123`
+- Operator (mobile): `operator@parking.com` / `operator123`
+
+### Useful commands
+
+```bash
+npm run deploy:logs    # View logs
+npm run deploy:down    # Stop all
+npm run deploy:seed    # Re-seed users
+docker compose restart backend
+```
+
+### HTTPS (optional)
+
+Install **Caddy** or **Certbot** in front of port 80, ama isticmaal Cloudflare proxy.
+
+### Native APK (points to your server)
+
+Marka APK build gareyso, ku dar server IP:
+
+```bash
+cd mobile
+EXPO_PUBLIC_API_URL=http://YOUR_SERVER_IP npx eas build --platform android --profile preview
+```
+
+### Architecture
+
+```
+Internet → Nginx (:80)
+            ├── /        → Admin (React)
+            ├── /m/      → Mobile PWA
+            └── /api/    → Backend (Node.js :3001)
+                              └── MongoDB
+```

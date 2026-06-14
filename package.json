@@ -1,0 +1,24 @@
+{
+  "name": "airport-parking",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -k -n backend,admin,mobile -c blue,green,magenta \"cd backend && npm start\" \"cd admin && npm run dev\" \"cd mobile && npm run web\"",
+    "dev": "npm run start",
+    "backend": "cd backend && npm run dev",
+    "backend:seed": "cd backend && npm run seed",
+    "admin": "cd admin && npm run dev",
+    "mobile": "cd mobile && npm start",
+    "mobile:web": "cd mobile && npm run web",
+    "mobile:build": "cd mobile && npm run web:build",
+    "install:all": "cd backend && npm install && cd ../admin && npm install && cd ../mobile && npm install",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:up": "docker compose up -d --build",
+    "deploy:down": "docker compose down",
+    "deploy:seed": "docker compose --profile seed run --rm seed",
+    "deploy:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
