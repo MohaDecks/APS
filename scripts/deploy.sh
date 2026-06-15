@@ -12,5 +12,4 @@ PM2_CMD="${PM2_CMD:-pm2}" bash scripts/pm2-start.sh
 echo ""
 echo "  Configure Nginx manually on the server (/etc/nginx/sites-available/)"
 echo "  Admin:    https://parking.dirshay.com/login"
-echo "  Mobile:   https://parking.dirshay.com/m/login"
-echo "  API:      https://parking.dirshay.com/api/health"
+echo "  Operator: http://parking.dirshay.com:8082/login"

@@ -55,7 +55,9 @@ npm run dev
 |---------|-----|
 | **Backend API** | http://localhost:3001 |
 | **Admin Portal** | http://localhost:5180/login |
-| **Mobile / PWA** | http://localhost:8082/login |
+| **Operator App** | http://localhost:8082/login |
+
+> **Admin iyo Operator** port kala duwan ayay ku yaallaan — hal browser labadood isku ma dhacaan (token conflict ma jiro).
 
 > **Muhiim:** Ku orod **root folder-ka** `APS` — hal amar ayaa backend + admin + mobile wada bilaaba.
 
@@ -225,7 +227,11 @@ sudo pm2 list
 
 Waa in aad aragto **`aps-api`**.
 
-### 3. Nginx (`/etc/nginx/sites-available/parking.dirshay.com`)
+### 3. Nginx — laba port (admin vs operator)
+
+**Muhiim:** Admin iyo Operator **kala saar** — hal browser labadood isku ma wada isticmaalin (token conflict).
+
+#### A) Admin — port 80/443 (`/etc/nginx/sites-available/parking.dirshay.com`)
 
 ```nginx
 server {
@@ -242,15 +248,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location = /m {
-        return 301 /m/;
-    }
-
-    location /m/ {
-        alias /var/www/html/APS/deploy/dist/m/;
-        try_files $uri $uri/ /m/index.html;
-    }
-
     location / {
         root /var/www/html/APS/deploy/dist/admin;
         try_files $uri $uri/ /index.html;
@@ -258,19 +255,45 @@ server {
 }
 ```
 
+#### B) Operator — port 8082 (`/etc/nginx/sites-available/parking-operator.conf`)
+
+```nginx
+server {
+    listen 8082;
+    server_name parking.dirshay.com;
+    client_max_body_size 10m;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        root /var/www/html/APS/deploy/dist/operator;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
 ```bash
 sudo ln -sf /etc/nginx/sites-available/parking.dirshay.com /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/parking-operator.conf /etc/nginx/sites-enabled/
+sudo ufw allow 8082/tcp
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d parking.dirshay.com
 ```
 
 ### 4. URLs
 
-| Wax | URL |
-|-----|-----|
-| **Admin** | https://parking.dirshay.com/login |
-| **Operator** | https://parking.dirshay.com/m/login |
-| **API** | https://parking.dirshay.com/api/health |
+| Wax | URL | Login |
+|-----|-----|-------|
+| **Admin** | https://parking.dirshay.com/login | `admin@parking.com` |
+| **Operator** | http://parking.dirshay.com:8082/login | `operator@parking.com` |
+| **API** | https://parking.dirshay.com/api/health | — |
 
 DNS: **A** record `parking` → server IP.
 
@@ -298,9 +321,7 @@ npm run pm2:stop
 ### Architecture
 
 ```
-Internet → Nginx (:80/443)
-            ├── /        → deploy/dist/admin
-            ├── /m/      → deploy/dist/m
-            └── /api/    → PM2 aps-api (:3001)
-                              └── MongoDB (:27017)
+Admin     → parking.dirshay.com      (:443) → deploy/dist/admin
+Operator  → parking.dirshay.com      (:8082) → deploy/dist/operator
+API       → /api/ on both              → PM2 aps-api (:3001) → MongoDB
 ```

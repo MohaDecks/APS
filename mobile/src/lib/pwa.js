@@ -1,7 +1,8 @@
-/** Web base path: '' locally, '/m' on production nginx. */
+/** Web base path: '' on operator port; '/m' only for legacy paths. */
 export function getWebBasePath() {
   if (typeof window === 'undefined') return '';
-  const { pathname } = window.location;
+  const { pathname, port } = window.location;
+  if (port === '8082') return '';
   if (pathname === '/m' || pathname.startsWith('/m/')) return '/m';
   return '';
 }
