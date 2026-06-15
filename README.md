@@ -45,17 +45,7 @@ docker run -d -p 27017:27017 --name parking-mongo mongo:7
 npm run install:all
 ```
 
-### 3. Seed database (default users)
-
-```bash
-npm run backend:seed
-```
-
-Default accounts:
-- **Admin:** `admin@parking.com` / `admin123`
-- **Operator:** `operator@parking.com` / `operator123`
-
-### 4. Start everything (recommended)
+### 3. Start everything (recommended)
 
 Hal amar — backend + admin + mobile (browser):
 
@@ -80,7 +70,7 @@ npm run admin      # Admin portal only
 npm run mobile:web # Mobile browser only
 ```
 
-### 5. Start admin portal (old)
+### 4. Start admin portal (old)
 
 ```bash
 npm run admin
@@ -172,10 +162,10 @@ For Android emulator, use `http://10.0.2.2:3001`.
 
 Default connection: `mongodb://127.0.0.1:27017/airport_parking`
 
-To use a custom URI, copy `.env.example` to `.env`:
+To use a custom URI, create `backend/.env`:
 
 ```bash
-cp backend/.env.example backend/.env
+nano backend/.env
 ```
 
 ```env
@@ -234,7 +224,6 @@ Ama isticmaal `git clone` haddii repo GitHub ku jiro.
 ### 2. Configure environment
 
 ```bash
-cp .env.example .env
 nano .env
 ```
 

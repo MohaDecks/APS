@@ -4,8 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [ ! -f .env ]; then
-  echo "Creating .env from .env.example — edit JWT_SECRET before production!"
-  cp .env.example .env
+  echo "Warning: .env not found — create one with JWT_SECRET and HTTP_PORT before production."
 fi
 
 echo "Building and starting containers..."

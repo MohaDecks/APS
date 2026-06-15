@@ -6,7 +6,6 @@
     "start": "concurrently -k -n backend,admin,mobile -c blue,green,magenta \"cd backend && npm start\" \"cd admin && npm run dev\" \"cd mobile && npm run web\"",
     "dev": "npm run start",
     "backend": "cd backend && npm run dev",
-    "backend:seed": "cd backend && npm run seed",
     "admin": "cd admin && npm run dev",
     "mobile": "cd mobile && npm start",
     "mobile:web": "cd mobile && npm run web",
