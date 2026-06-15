@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 function getApiUrl() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const { hostname, port, origin } = window.location;
-    // Local dev: Expo on 8081, API on 3001
+    // Local dev: mobile web on 8082, API on 3001
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       if (port === '8081' || port === '19006' || port === '8082') {
         return `http://${hostname}:3001`;

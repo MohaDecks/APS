@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import api, { saveAuth } from '../src/lib/api';
 import { theme } from '../src/lib/theme';
+import Logo from '../src/components/Logo';
 
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
 
@@ -37,10 +38,7 @@ export default function Login() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <View style={styles.iconBox}>
-            <Text style={styles.icon}>✈️</Text>
-          </View>
-          <Text style={styles.title}>Airport Parking</Text>
+          <Logo variant="hero" />
           <Text style={styles.subtitle}>Operator sign in</Text>
         </View>
 
@@ -86,15 +84,8 @@ export default function Login() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.bg },
   container: { flex: 1, justifyContent: 'center', paddingHorizontal: theme.space.lg },
-  header: { alignItems: 'center', marginBottom: 40 },
-  iconBox: {
-    width: 80, height: 80, borderRadius: 22, backgroundColor: theme.surface,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
-  },
-  icon: { fontSize: 36 },
-  title: { fontSize: 28, fontWeight: '700', color: theme.dark, fontFamily: theme.font, letterSpacing: -0.5 },
-  subtitle: { fontSize: 17, color: theme.label, marginTop: 6, fontFamily: theme.font },
+  header: { alignItems: 'center', marginBottom: 36 },
+  subtitle: { fontSize: 16, color: theme.label, marginTop: 20, fontFamily: theme.font },
   form: {
     backgroundColor: theme.surface,
     borderRadius: theme.radius.lg,

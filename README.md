@@ -39,28 +39,34 @@ brew services start mongodb-community
 docker run -d -p 27017:27017 --name parking-mongo mongo:7
 ```
 
-### 2. Install dependencies
+### 2. Install (hal mar)
+
+Root folder-ka mashruuca:
 
 ```bash
+cd /Volumes/O/APS
 npm run install:all
 ```
 
-### 3. Start everything (recommended)
-
-Hal amar — backend + admin + mobile (browser):
+### 3. Start (hal amar — wax walba wada)
 
 ```bash
-cd /Volumes/O/Parking
-npm run start
+npm run dev
 ```
 
 | Service | URL |
 |---------|-----|
 | **Backend API** | http://localhost:3001 |
-| **Admin Portal** | http://localhost:5173 |
-| **Mobile / PWA** | http://localhost:8081 |
+| **Admin Portal** | http://localhost:5180/login |
+| **Mobile / PWA** | http://localhost:8082/login |
 
-> **Muhiim:** Ku orod **root folder-ka** `Parking` — ma aha `mobile-app` ama folder kale.
+> **Muhiim:** Ku orod **root folder-ka** `APS` — hal amar ayaa backend + admin + mobile wada bilaaba.
+
+Jooji dhammaan:
+
+```bash
+npm run stop
+```
 
 ### Start individually (optional)
 
@@ -76,7 +82,7 @@ npm run mobile:web # Mobile browser only
 npm run admin
 ```
 
-Fur browser: http://localhost:5173
+Fur browser: http://localhost:5180/login
 
 ### 6. Start mobile app (Expo Go / emulator)
 

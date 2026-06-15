@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Plane, Eye, History, Settings, Users, BarChart3, FileText, LogOut } from 'lucide-react';
+import { Eye, History, Settings, Users, BarChart3, FileText, LogOut } from 'lucide-react';
+import Logo from './Logo';
 
 const navItems = [
   { to: '/dashboard', label: 'Live View', icon: Eye },
@@ -24,15 +25,7 @@ export default function Layout() {
     <div className="flex min-h-screen bg-slate-100">
       <aside className="w-64 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col shrink-0 shadow-xl">
         <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center shadow-md">
-              <Plane className="w-5 h-5 text-slate-900" />
-            </div>
-            <div>
-              <p className="font-black text-sm text-white tracking-wide leading-tight">AIRPORT</p>
-              <p className="text-[10px] font-bold text-emerald-400 tracking-[0.2em] uppercase">Car Parking</p>
-            </div>
-          </div>
+          <Logo variant="compact" theme="dark" />
           <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">Terminal short-term parking management</p>
         </div>
 

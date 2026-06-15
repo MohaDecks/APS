@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plane, Car, MapPin, Shield } from 'lucide-react';
+import { Car, MapPin, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
+import Logo from '../components/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -34,18 +35,12 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left — airport branding */}
       <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden airport-grid-bg text-white flex-col justify-between p-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-emerald-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-blue-950/80 to-slate-900/90" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute bottom-20 -left-16 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl" />
 
-        <div className="relative">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center shadow-lg">
-              <Plane className="w-6 h-6 text-slate-900" />
-            </div>
-            <div>
-              <p className="font-black text-lg tracking-wide">AIRPORT PARKING</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-[0.25em] font-bold">Management System</p>
-            </div>
-          </div>
+        <div className="relative flex flex-col items-start">
+          <Logo variant="hero" theme="dark" className="mb-14" />
 
           <h2 className="text-4xl font-black leading-tight max-w-md">
             Terminal car parking operations
@@ -78,12 +73,9 @@ export default function Login() {
       {/* Right — login form */}
       <div className="flex-1 flex items-center justify-center bg-slate-50 px-6 py-12">
         <div className="w-full max-w-md">
-          <div className="lg:hidden text-center mb-10">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 mb-4">
-              <Plane className="w-7 h-7 text-amber-400" />
-            </div>
-            <h1 className="font-black text-2xl text-slate-900">Airport Parking</h1>
-            <p className="text-slate-500 text-sm mt-1">Admin Control Panel</p>
+          <div className="lg:hidden flex flex-col items-center mb-10">
+            <Logo variant="hero" theme="light" />
+            <p className="text-slate-500 text-sm mt-4">Admin Control Panel</p>
           </div>
 
           <div className="bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80">
