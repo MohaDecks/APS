@@ -256,6 +256,58 @@ npm run pm2:stop
 
 > **Docker vs PM2:** Dooro mid — ha orodinin labadaba backend isku mar. PM2: `docker compose stop backend web`. Docker: `npm run pm2:stop`.
 
+## Subdomain — parking.dirshay.com
+
+[dirshay.com](http://dirshay.com/) wuxuu hore u hayaa SafeFare. APS waxaa lagu riday **subdomain** gaar ah:
+
+| Wax | URL |
+|-----|-----|
+| **Admin** | http://parking.dirshay.com/login |
+| **Operator (mobile/PWA)** | http://parking.dirshay.com/m/login |
+| **API** | http://parking.dirshay.com/api/health |
+
+### 1. DNS (domain registrar-ka dirshay.com)
+
+| Type | Name | Value |
+|------|------|-------|
+| **A** | `parking` | `2.58.82.168` (IP server-kaaga) |
+
+Sug 5–30 daqiiqo si DNS u faafo.
+
+### 2. Server `.env` (Docker — isku mid)
+
+```env
+JWT_SECRET=password-random-ah-oo-dheer
+HTTP_PORT=8080
+```
+
+### 3. Docker bilow
+
+```bash
+cd /var/www/html/APS
+git pull
+docker compose up -d --build
+curl http://localhost:8080/api/health
+```
+
+### 4. Nginx subdomain (port 80 → Docker 8080)
+
+```bash
+sudo cp deploy/nginx-parking.dirshay.com.conf /etc/nginx/sites-available/parking.dirshay.com
+sudo ln -sf /etc/nginx/sites-available/parking.dirshay.com /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 5. HTTPS (recommended)
+
+```bash
+sudo certbot --nginx -d parking.dirshay.com
+```
+
+Kadib isticmaal `https://parking.dirshay.com/m/login`
+
+> **dirshay.com** (SafeFare) iyo **parking.dirshay.com** (APS) way kala madax banaan yihiin — ma isku dhacaan.
+
 ## Server Deploy (Docker)
 
 Ku shub server-ka (VPS) — hal amar, wax walba waa isku socdaan.

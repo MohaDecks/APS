@@ -1,17 +1,42 @@
+/** Web base path: '' locally, '/m' on server (Docker/nginx). */
+export function getWebBasePath() {
+  if (typeof window === 'undefined') return '';
+  const { pathname } = window.location;
+  if (pathname === '/m' || pathname.startsWith('/m/')) return '/m';
+  return '';
+}
+
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  const base = getWebBasePath();
+  const swUrl = `${base}/sw.js`;
+
+  window.addEventListener('load', async () => {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        const scopePath = new URL(reg.scope).pathname;
+        const wantScope = base ? `${base}/` : '/';
+        if (scopePath !== wantScope && scopePath === '/') {
+          await reg.unregister();
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    navigator.serviceWorker.register(swUrl).catch(() => {});
   });
 }
 
 export function ensurePwaMeta() {
   if (typeof document === 'undefined') return;
 
+  const base = getWebBasePath();
+
   const tags = [
-    { rel: 'manifest', href: '/manifest.json' },
-    { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
+    { rel: 'manifest', href: `${base}/manifest.json` },
+    { rel: 'apple-touch-icon', href: `${base}/icons/apple-touch-icon.png` },
   ];
 
   tags.forEach(({ rel, href }) => {
@@ -25,7 +50,7 @@ export function ensurePwaMeta() {
 
   const metas = [
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
-    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
     { name: 'apple-mobile-web-app-title', content: 'Parking' },
     { name: 'mobile-web-app-capable', content: 'yes' },
   ];
