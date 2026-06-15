@@ -1,4 +1,4 @@
-/** Web base path: '' locally, '/m' on server (Docker/nginx). */
+/** Web base path: '' locally, '/m' on production nginx. */
 export function getWebBasePath() {
   if (typeof window === 'undefined') return '';
   const { pathname } = window.location;

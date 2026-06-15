@@ -7,7 +7,7 @@ if ! nc -z 127.0.0.1 27017 2>/dev/null; then
   echo ""
   echo "MongoDB ma socdo. Bilow marka hore:"
   echo "  brew services start mongodb-community"
-  echo "  ama: docker run -d -p 27017:27017 --name parking-mongo mongo:7"
+  echo "  ama: sudo systemctl start mongod"
   echo ""
   exit 1
 fi
