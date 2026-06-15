@@ -204,6 +204,58 @@ Lacagta waxaa loo xisaabiyaa saacad kasta oo la bilaabay:
 
 Admin wuxuu beddeli karaa qiimaha saacaddii Settings → Hourly rate.
 
+## Server Deploy (PM2 + Nginx)
+
+Isticmaal haddii aad hore u leedahay **PM2 apps** (`deknest`, `insurance-api`, iwm.) oo aad rabto **aps-api** in uu ku muuqdo `pm2 list`.
+
+### 1. `.env` server-ka
+
+```env
+JWT_SECRET=password-random-ah-oo-dheer
+MONGODB_URI=mongodb://127.0.0.1:27017/airport_parking
+PORT=3001
+```
+
+### 2. Deploy PM2
+
+```bash
+cd /var/www/html/APS
+git pull
+npm run install:all
+sudo PM2_CMD="sudo pm2" npm run pm2:start
+sudo pm2 list
+```
+
+Waa in aad aragto **`aps-api`** liiska.
+
+### 3. Nginx (port 80)
+
+```bash
+sudo cp deploy/nginx-host.conf /etc/nginx/sites-available/aps
+sudo nano /etc/nginx/sites-available/aps   # beddel server_name + paths
+sudo ln -sf /etc/nginx/sites-available/aps /etc/nginx/sites-enabled/aps
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 4. Update marka code cusub la keeno
+
+```bash
+cd /var/www/html/APS
+git pull
+sudo PM2_CMD="sudo pm2" npm run pm2:restart
+```
+
+### PM2 commands
+
+```bash
+sudo pm2 list
+sudo pm2 logs aps-api
+sudo pm2 restart aps-api
+npm run pm2:stop
+```
+
+> **Docker vs PM2:** Dooro mid — ha orodinin labadaba backend isku mar. PM2: `docker compose stop backend web`. Docker: `npm run pm2:stop`.
+
 ## Server Deploy (Docker)
 
 Ku shub server-ka (VPS) — hal amar, wax walba waa isku socdaan.

@@ -16,7 +16,11 @@
     "deploy:up": "docker compose up -d --build",
     "deploy:down": "docker compose down",
     "deploy:seed": "docker compose --profile seed run --rm seed",
-    "deploy:logs": "docker compose logs -f"
+    "deploy:logs": "docker compose logs -f",
+    "pm2:build": "bash scripts/pm2-build.sh",
+    "pm2:start": "bash scripts/pm2-start.sh",
+    "pm2:stop": "bash scripts/pm2-stop.sh",
+    "pm2:restart": "bash scripts/pm2-build.sh && pm2 restart aps-api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
