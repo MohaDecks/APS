@@ -36,3 +36,10 @@ export async function getUser() {
   const raw = await AsyncStorage.getItem('user');
   return raw ? JSON.parse(raw) : null;
 }
+
+export function resolveAssetUrl(path) {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const base = getApiUrl().replace(/\/$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+}

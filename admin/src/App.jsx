@@ -7,6 +7,7 @@ import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
 import Invoices from './pages/Invoices';
+import PaymentMethods from './pages/PaymentMethods';
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="invoices" element={<Invoices />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<Users />} />
+        <Route path="payments" element={<PaymentMethods />} />
         <Route path="settings" element={<Settings />} />
         <Route path="terminal" element={<Navigate to="/dashboard" replace />} />
       </Route>

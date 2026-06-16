@@ -1,8 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Print from 'expo-print';
-import { formatETB, formatDuration } from '../src/lib/api';
+import { formatETB, formatDuration, resolveAssetUrl } from '../src/lib/api';
 import { theme } from '../src/lib/theme';
 
 export default function Invoice() {
@@ -34,6 +34,7 @@ export default function Invoice() {
         <p>Exit: ${invoice.exit_time?.replace('T', ' ').slice(0, 19)}</p>
         <p>Duration: ${formatDuration(invoice.duration_minutes)}</p>
         <p>Rate: ${formatETB(invoice.hourly_rate)}/hr</p>
+        ${invoice.payment_method_name ? `<p>Payment: ${invoice.payment_method_name}${invoice.payment_method_logo_url ? `<br/><img src="${resolveAssetUrl(invoice.payment_method_logo_url)}" alt="" style="height:32px;margin-top:4px"/>` : (invoice.payment_method_icon ? ` (${invoice.payment_method_icon})` : '')}</p>` : ''}
         <hr/>
         <p style="font-size:22px;font-weight:700">Total: ${formatETB(invoice.total_fee)}</p>
       </body></html>
@@ -58,6 +59,23 @@ export default function Invoice() {
           <Row label="Exit" value={invoice.exit_time?.replace('T', ' ').slice(0, 19)} />
           <Row label="Duration" value={formatDuration(invoice.duration_minutes)} />
           <Row label="Rate" value={`${formatETB(invoice.hourly_rate)}/hr`} />
+          {invoice.payment_method_name && (
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>Payment</Text>
+              <View style={styles.paymentValue}>
+                {resolveAssetUrl(invoice.payment_method_logo_url) ? (
+                  <Image
+                    source={{ uri: resolveAssetUrl(invoice.payment_method_logo_url) }}
+                    style={styles.paymentLogo}
+                    resizeMode="contain"
+                  />
+                ) : null}
+                <Text style={[styles.rowValue, invoice.payment_method_logo_url && styles.rowValueWithLogo]}>
+                  {`${invoice.payment_method_icon || ''} ${invoice.payment_method_name}`.trim()}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.totalBox}>
             <Text style={styles.totalLabel}>Total</Text>
@@ -98,6 +116,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   rowLabel: { fontSize: 15, color: theme.label, fontFamily: theme.font },
   rowValue: { fontSize: 15, color: theme.dark, fontFamily: theme.font },
+  paymentValue: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '60%' },
+  paymentLogo: { width: 28, height: 28, borderRadius: 6 },
+  rowValueWithLogo: { flexShrink: 1, textAlign: 'right' },
   bold: { fontWeight: '700' },
   mono: { fontFamily: theme.mono, fontWeight: '700', letterSpacing: 1 },
   totalBox: {

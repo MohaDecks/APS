@@ -1,8 +1,25 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet, Pressable, Platform, ActivityIndicator,
+  Modal, View, Text, TouchableOpacity, StyleSheet, Pressable, Platform, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
+import { useEffect } from 'react';
+import { playSuccessSound } from '../lib/sound';
+import { resolveAssetUrl } from '../lib/api';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+
+function PaymentLogo({ logoUrl, icon, size = 40, textStyle }) {
+  const uri = resolveAssetUrl(logoUrl);
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: 8 }}
+        resizeMode="contain"
+      />
+    );
+  }
+  return <Text style={textStyle}>{icon || '💳'}</Text>;
+}
 
 export function ConfirmCheckInDialog({ visible, plate, onConfirm, onCancel, loading }) {
   return (
@@ -41,14 +58,25 @@ export function ConfirmCheckInDialog({ visible, plate, onConfirm, onCancel, load
   );
 }
 
-export function ConfirmCheckOutDialog({ visible, session, onConfirm, onCancel, loading }) {
+export function ConfirmCheckOutDialog({
+  visible,
+  session,
+  paymentMethods,
+  selectedPaymentId,
+  onSelectPayment,
+  onConfirm,
+  onCancel,
+  loading,
+}) {
   if (!session) return null;
+
+  const canConfirm = !!selectedPaymentId && !loading;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
-        <View style={styles.dialog}>
+        <View style={[styles.dialog, styles.dialogWide]}>
           <View style={[styles.iconRing, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
             <Text style={styles.iconBig}>🚗</Text>
           </View>
@@ -65,10 +93,41 @@ export function ConfirmCheckOutDialog({ visible, session, onConfirm, onCancel, l
             <InfoPill label="Total Fee" value={session.feeLabel} accent />
           </View>
 
+          <Text style={styles.payTitle}>Select payment method</Text>
+          {paymentMethods.length === 0 ? (
+            <Text style={styles.payEmpty}>No active payment methods. Ask admin to add them.</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.payScroll}>
+              <View style={styles.payRow}>
+                {paymentMethods.map((method) => {
+                  const selected = selectedPaymentId === method.id;
+                  return (
+                    <TouchableOpacity
+                      key={method.id}
+                      style={[styles.payCard, selected && styles.payCardSelected]}
+                      onPress={() => onSelectPayment(method.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.payIcon, selected && styles.payIconSelected]}>
+                        <PaymentLogo
+                          logoUrl={method.logo_url}
+                          icon={method.icon}
+                          size={36}
+                          textStyle={styles.payIconText}
+                        />
+                      </View>
+                      <Text style={[styles.payName, selected && styles.payNameSelected]}>{method.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          )}
+
           <TouchableOpacity
-            style={[styles.primaryBtn, styles.dangerBtn, loading && styles.btnDisabled]}
+            style={[styles.primaryBtn, styles.dangerBtn, !canConfirm && styles.btnDisabled]}
             onPress={onConfirm}
-            disabled={loading}
+            disabled={!canConfirm}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -78,6 +137,60 @@ export function ConfirmCheckOutDialog({ visible, session, onConfirm, onCancel, l
           </TouchableOpacity>
           <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>
             <Text style={styles.ghostBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+export function CheckOutSuccessDialog({ visible, invoice, onPrint, onDone }) {
+  useEffect(() => {
+    if (visible) playSuccessSound();
+  }, [visible]);
+
+  if (!invoice) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDone}>
+      <View style={styles.overlay}>
+        <View style={[styles.dialog, styles.dialogWide]}>
+          <View style={[styles.iconRing, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
+            <Text style={[styles.iconBig, { fontSize: 36 }]}>✓</Text>
+          </View>
+          <Text style={styles.dialogTitle}>Payment Received!</Text>
+          <Text style={styles.dialogSub}>Check-out completed successfully</Text>
+
+          <View style={styles.plateCard}>
+            <Text style={styles.plateLabel}>PLATE</Text>
+            <Text style={styles.plateText}>{invoice.plate}</Text>
+          </View>
+
+          {invoice.payment_method_name && (
+            <View style={styles.paidWith}>
+              <Text style={styles.paidLabel}>Paid with</Text>
+              <View style={styles.paidBadge}>
+                <PaymentLogo
+                  logoUrl={invoice.payment_method_logo_url}
+                  icon={invoice.payment_method_icon}
+                  size={28}
+                  textStyle={styles.paidIcon}
+                />
+                <Text style={styles.paidName}>{invoice.payment_method_name}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.successFeeBox}>
+            <Text style={styles.successFeeLabel}>Total paid</Text>
+            <Text style={styles.successFeeValue}>{invoice.total_fee != null ? `ETB ${Number(invoice.total_fee).toFixed(2)}` : '—'}</Text>
+          </View>
+
+          <TouchableOpacity style={[styles.primaryBtn, styles.payBtn]} onPress={onPrint}>
+            <Text style={styles.primaryBtnText}>Print Receipt</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ghostBtn} onPress={onDone}>
+            <Text style={styles.ghostBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -158,6 +271,7 @@ const styles = StyleSheet.create({
     elevation: 16,
     zIndex: 1,
   },
+  dialogWide: { maxWidth: 380 },
   iconRing: {
     width: 72,
     height: 72,
@@ -207,4 +321,54 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   ghostBtn: { paddingVertical: 12, width: '100%', alignItems: 'center' },
   ghostBtnText: { color: '#888', fontSize: 15, fontWeight: '500' },
+  payTitle: { fontSize: 12, fontWeight: '700', color: '#666', textTransform: 'uppercase', letterSpacing: 1, alignSelf: 'flex-start', marginBottom: 10 },
+  payEmpty: { fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 16, width: '100%' },
+  payScroll: { width: '100%', marginBottom: 16, maxHeight: 110 },
+  payRow: { flexDirection: 'row', gap: 10, paddingBottom: 4 },
+  payCard: {
+    width: 88,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#eee',
+    alignItems: 'center',
+    backgroundColor: '#fafafa',
+  },
+  payCardSelected: { borderColor: '#ef4444', backgroundColor: '#fef2f2' },
+  payIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  payIconSelected: { borderColor: '#ef4444', backgroundColor: '#fff5f5' },
+  payIconText: { fontSize: 18, fontWeight: '800' },
+  payName: { fontSize: 11, fontWeight: '700', color: '#555', textAlign: 'center' },
+  payNameSelected: { color: '#b91c1c' },
+  payBtn: { backgroundColor: '#007AFF' },
+  paidWith: { width: '100%', alignItems: 'center', marginBottom: 12 },
+  paidLabel: { fontSize: 11, color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
+  paidBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f0fdf4', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+  paidIcon: { fontSize: 18 },
+  paidName: { fontSize: 15, fontWeight: '700', color: '#166534' },
+  successFeeBox: {
+    width: '100%',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  successFeeLabel: { fontSize: 13, color: '#888', fontWeight: '600' },
+  successFeeValue: { fontSize: 22, fontWeight: '800', color: '#16a34a' },
 });

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Eye, History, Settings, Users, BarChart3, FileText, LogOut } from 'lucide-react';
+import { Eye, History, Settings, Users, BarChart3, FileText, LogOut, CreditCard } from 'lucide-react';
 import Logo from './Logo';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/users', label: 'Users', icon: Users },
+  { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/settings', label: 'Pricing', icon: Settings },
 ];
 

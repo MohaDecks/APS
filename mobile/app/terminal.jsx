@@ -12,6 +12,7 @@ import {
   ConfirmCheckInDialog,
   ConfirmCheckOutDialog,
   CheckInSuccessDialog,
+  CheckOutSuccessDialog,
   ErrorDialog,
 } from '../src/components/ParkingDialog';
 
@@ -31,6 +32,10 @@ export default function Terminal() {
 
   const [successPlate, setSuccessPlate] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [completedInvoice, setCompletedInvoice] = useState(null);
+  const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showError, setShowError] = useState(false);
 
@@ -105,22 +110,35 @@ export default function Terminal() {
 
   const onCheckOutSwipe = () => {
     if (!checkoutTarget) return;
+    setSelectedPaymentId(null);
     setPendingCheckOut(checkoutTarget);
   };
 
+  useEffect(() => {
+    if (!pendingCheckOut) return;
+    api.get('/payment-methods/active')
+      .then(({ data }) => setPaymentMethods(data))
+      .catch(() => setPaymentMethods([]));
+  }, [pendingCheckOut]);
+
   const confirmCheckOut = async () => {
-    if (!pendingCheckOut || loading) return;
+    if (!pendingCheckOut || !selectedPaymentId || loading) return;
     setLoading(true);
     try {
-      const { data } = await api.post(`/parking/check-out/${pendingCheckOut.id}`);
+      const { data } = await api.post(`/parking/check-out/${pendingCheckOut.id}`, {
+        payment_method_id: selectedPaymentId,
+      });
       setPendingCheckOut(null);
       setCheckoutTarget(null);
+      setSelectedPaymentId(null);
       setCheckoutSwipeKey((k) => k + 1);
-      router.push({ pathname: '/invoice', params: { data: JSON.stringify(data.invoice) } });
+      setCompletedInvoice(data.invoice);
+      setShowCheckoutSuccess(true);
       fetchData();
     } catch (err) {
       setPendingCheckOut(null);
       setCheckoutTarget(null);
+      setSelectedPaymentId(null);
       setCheckoutSwipeKey((k) => k + 1);
       setErrorMsg(err.response?.data?.error || 'Check-out failed');
       setShowError(true);
@@ -131,7 +149,19 @@ export default function Terminal() {
 
   const cancelCheckOut = () => {
     setPendingCheckOut(null);
+    setSelectedPaymentId(null);
     setCheckoutSwipeKey((k) => k + 1);
+  };
+
+  const handlePrintReceipt = () => {
+    if (!completedInvoice) return;
+    setShowCheckoutSuccess(false);
+    router.push({ pathname: '/invoice', params: { data: JSON.stringify(completedInvoice) } });
+  };
+
+  const handleCheckoutDone = () => {
+    setShowCheckoutSuccess(false);
+    setCompletedInvoice(null);
   };
 
   const handleLogout = async () => {
@@ -256,7 +286,22 @@ export default function Terminal() {
       )}
 
       <ConfirmCheckInDialog visible={!!pendingCheckIn} plate={pendingCheckIn} onConfirm={confirmCheckIn} onCancel={cancelCheckIn} loading={loading} />
-      <ConfirmCheckOutDialog visible={!!pendingCheckOut} session={pendingCheckOut} onConfirm={confirmCheckOut} onCancel={cancelCheckOut} loading={loading} />
+      <ConfirmCheckOutDialog
+        visible={!!pendingCheckOut}
+        session={pendingCheckOut}
+        paymentMethods={paymentMethods}
+        selectedPaymentId={selectedPaymentId}
+        onSelectPayment={setSelectedPaymentId}
+        onConfirm={confirmCheckOut}
+        onCancel={cancelCheckOut}
+        loading={loading}
+      />
+      <CheckOutSuccessDialog
+        visible={showCheckoutSuccess}
+        invoice={completedInvoice}
+        onPrint={handlePrintReceipt}
+        onDone={handleCheckoutDone}
+      />
       <CheckInSuccessDialog visible={showSuccess} plate={successPlate} onClose={() => setShowSuccess(false)} />
       <ErrorDialog visible={showError} message={errorMsg} onClose={() => setShowError(false)} />
     </SafeAreaView>

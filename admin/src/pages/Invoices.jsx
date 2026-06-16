@@ -149,6 +149,9 @@ export default function Invoices() {
                   <Row label="Exit" value={selected.exit_time?.replace('T', ' ').slice(0, 19)} />
                   <Row label="Duration" value={formatDuration(selected.duration_minutes)} />
                   <Row label="Rate" value={`${formatETB(selected.hourly_rate)}/hr`} />
+                  {selected.payment_method_name && (
+                    <Row label="Payment" value={`${selected.payment_method_icon || ''} ${selected.payment_method_name}`.trim()} />
+                  )}
                   <div className="border-t border-slate-200 pt-3 mt-3 bg-slate-900 rounded-xl px-4 py-3 flex justify-between items-center">
                     <span className="text-slate-400 text-xs font-bold uppercase">Total</span>
                     <span className="font-black text-xl text-emerald-400">{formatETB(selected.total_fee)}</span>

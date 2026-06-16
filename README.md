@@ -192,7 +192,8 @@ For MongoDB Atlas (cloud), set `MONGODB_URI` to your Atlas connection string.
 | GET | `/api/invoices` | List invoices |
 | GET | `/api/reports/:period` | daily/weekly/monthly reports |
 | GET/PUT | `/api/settings` | Parking settings |
-| GET/POST/DELETE | `/api/users` | User management (admin) |
+| GET/POST/PUT/DELETE | `/api/payment-methods` | Payment methods (admin) |
+| GET | `/api/payment-methods/active` | Active payment methods (operator) |
 
 ## Fee Calculation
 

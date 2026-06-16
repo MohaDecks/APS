@@ -2,6 +2,7 @@ import { Router } from 'express';
 import Session from '../models/Session.js';
 import Invoice from '../models/Invoice.js';
 import Settings from '../models/Settings.js';
+import PaymentMethod from '../models/PaymentMethod.js';
 import { authMiddleware, operatorOnly } from '../middleware/auth.js';
 import { calculateFee, formatElapsed, generateInvoiceNumber } from '../utils/parking.js';
 import { toApi, toApiList, startOfToday } from '../utils/format.js';
@@ -78,6 +79,16 @@ router.post('/check-in', operatorOnly, async (req, res) => {
 });
 
 router.post('/check-out/:id', operatorOnly, async (req, res) => {
+  const { payment_method_id } = req.body;
+  if (!payment_method_id) {
+    return res.status(400).json({ error: 'Payment method required' });
+  }
+
+  const paymentMethod = await PaymentMethod.findOne({ _id: payment_method_id, active: true });
+  if (!paymentMethod) {
+    return res.status(400).json({ error: 'Invalid or inactive payment method' });
+  }
+
   const session = await Session.findById(req.params.id);
   if (!session) return res.status(404).json({ error: 'Session not found' });
   if (session.status !== 'active') return res.status(400).json({ error: 'Session already completed' });
@@ -90,6 +101,10 @@ router.post('/check-out/:id', operatorOnly, async (req, res) => {
   session.fee = fee;
   session.status = 'completed';
   session.checked_out_by = req.user.id;
+  session.payment_method_id = paymentMethod._id;
+  session.payment_method_name = paymentMethod.name;
+  session.payment_method_icon = paymentMethod.icon;
+  session.payment_method_logo_url = paymentMethod.logo_url;
   await session.save();
 
   const invoice = await Invoice.create({
@@ -103,6 +118,10 @@ router.post('/check-out/:id', operatorOnly, async (req, res) => {
     total_fee: fee,
     facility_name: settings.facility_name,
     issued_by: req.user.id,
+    payment_method_id: paymentMethod._id,
+    payment_method_name: paymentMethod.name,
+    payment_method_icon: paymentMethod.icon,
+    payment_method_logo_url: paymentMethod.logo_url,
   });
 
   res.json({ session: toApi(session), invoice: toApi(invoice) });
