@@ -18,7 +18,10 @@ router.post('/', async (req, res) => {
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Email, password, and name required' });
   }
-  const userRole = role === 'admin' ? 'admin' : 'operator';
+  if (!['admin', 'operator'].includes(role)) {
+    return res.status(400).json({ error: 'Role must be admin or operator' });
+  }
+  const userRole = role;
   const hash = bcrypt.hashSync(password, 10);
   try {
     const user = await User.create({ email: email.toLowerCase(), password: hash, name, role: userRole });

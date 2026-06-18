@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader';
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', name: '' });
+  const [form, setForm] = useState({ email: '', password: '', name: '', role: 'operator' });
 
   const fetchUsers = () => {
     api.get('/users').then(({ data }) => setUsers(data)).catch(() => toast.error('Failed to load users'));
@@ -18,10 +18,10 @@ export default function Users() {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/users', { ...form, role: 'operator' });
-      toast.success('Operator account created for mobile app');
+      await api.post('/users', form);
+      toast.success(form.role === 'admin' ? 'Admin account created' : 'Operator account created');
       setShowForm(false);
-      setForm({ email: '', password: '', name: '' });
+      setForm({ email: '', password: '', name: '', role: 'operator' });
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create user');
@@ -44,14 +44,14 @@ export default function Users() {
       <PageHeader
         badge="Management"
         title="App Users"
-        subtitle="Create operator accounts for the mobile app"
+        subtitle="Create operator or admin accounts"
       >
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          New operator
+          New user
         </button>
       </PageHeader>
 
@@ -70,13 +70,29 @@ export default function Users() {
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
               <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900" required />
             </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Role</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900 bg-white"
+                required
+              >
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
             <div className="col-span-2">
               <p className="text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
-                This account will be used on the mobile app / PWA for parking operations.
+                {form.role === 'admin'
+                  ? 'Admin accounts can sign in to this web portal and manage the system.'
+                  : 'Operator accounts are used on the mobile app / PWA for parking operations.'}
               </p>
             </div>
             <div className="col-span-2 flex justify-end">
-              <button type="submit" className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">Create operator</button>
+              <button type="submit" className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">
+                Create {form.role === 'admin' ? 'admin' : 'operator'}
+              </button>
             </div>
           </form>
         )}

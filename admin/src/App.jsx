@@ -6,6 +6,9 @@ import History from './pages/History';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import DailyReport from './pages/reports/DailyReport';
+import WeeklyReport from './pages/reports/WeeklyReport';
+import MonthlyReport from './pages/reports/MonthlyReport';
 import Invoices from './pages/Invoices';
 import PaymentMethods from './pages/PaymentMethods';
 
@@ -38,6 +41,9 @@ export default function App() {
         <Route path="history" element={<History />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/daily" element={<DailyReport />} />
+        <Route path="reports/weekly" element={<WeeklyReport />} />
+        <Route path="reports/monthly" element={<MonthlyReport />} />
         <Route path="users" element={<Users />} />
         <Route path="payments" element={<PaymentMethods />} />
         <Route path="settings" element={<Settings />} />

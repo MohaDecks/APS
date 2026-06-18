@@ -1,20 +1,29 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Eye, History, Settings, Users, BarChart3, FileText, LogOut, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Eye, History, Settings, Users, BarChart3, FileText, LogOut, CreditCard, ChevronDown, ChevronRight } from 'lucide-react';
 import Logo from './Logo';
 
 const navItems = [
   { to: '/dashboard', label: 'Live View', icon: Eye },
   { to: '/history', label: 'Departed', icon: History },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/users', label: 'Users', icon: Users },
   { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/settings', label: 'Pricing', icon: Settings },
 ];
 
+const reportLinks = [
+  { to: '/reports/daily', label: 'Daily Report' },
+  { to: '/reports/weekly', label: 'Weekly Report' },
+  { to: '/reports/monthly', label: 'Monthly Report' },
+];
+
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const reportsOpen = location.pathname.startsWith('/reports');
+  const [reportsExpanded, setReportsExpanded] = useState(reportsOpen);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -33,7 +42,64 @@ export default function Layout() {
         <p className="px-6 pt-5 pb-2 text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold">Control Panel</p>
 
         <nav className="flex-1 px-3 space-y-0.5">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <Eye className="w-4 h-4 shrink-0" />
+            Live View
+          </NavLink>
+
+          <NavLink
+            to="/history"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <History className="w-4 h-4 shrink-0" />
+            Departed
+          </NavLink>
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setReportsExpanded((v) => !v)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                reportsOpen ? 'text-white bg-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Reports</span>
+              {reportsExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {reportsExpanded && (
+              <div className="mt-1 ml-4 pl-3 border-l border-slate-700 space-y-0.5">
+                {reportLinks.map(({ to, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) =>
+                      `block px-3 py-2 rounded-lg text-sm transition-all ${
+                        isActive
+                          ? 'bg-emerald-600 text-white font-semibold'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {navItems.slice(2).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

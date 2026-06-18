@@ -31,3 +31,7 @@ export function formatDuration(minutes) {
   const m = minutes % 60;
   return `${h}h ${m}m`;
 }
+
+export function formatBilledHours(hours) {
+  return `${hours}h`;
+}
