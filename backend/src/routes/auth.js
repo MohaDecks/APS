@@ -7,11 +7,20 @@ import { toApi } from '../utils/format.js';
 const router = Router();
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
+  const { username, email, password } = req.body;
+  const identifier = (username || email || '').trim();
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
   }
-  const user = await User.findOne({ email: email.toLowerCase() });
+
+  const lower = identifier.toLowerCase();
+  const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const user = await User.findOne({
+    $or: [
+      { email: lower },
+      { name: new RegExp(`^${escaped}$`, 'i') },
+    ],
+  });
   if (!user || !bcrypt.compareSync(password, user.password)) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }

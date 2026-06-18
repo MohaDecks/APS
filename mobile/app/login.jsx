@@ -11,16 +11,16 @@ import Logo from '../src/components/Logo';
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) return;
+    if (!username.trim() || !password) return;
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { username: username.trim(), password });
       if (data.user.role !== 'operator') {
         Alert.alert('Access Denied', 'Admin accounts use the web portal. Operators only.');
         return;
@@ -43,14 +43,13 @@ export default function Login() {
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>User Name</Text>
           <TextInput
             style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="operator@parking.com"
+            value={username}
+            onChangeText={setUsername}
+            placeholder="User name"
             placeholderTextColor={theme.label}
-            keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
             {...webInput}

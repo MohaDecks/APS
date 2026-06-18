@@ -34,6 +34,7 @@ export default function Terminal() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [paymentPhone, setPaymentPhone] = useState('');
   const [completedInvoice, setCompletedInvoice] = useState(null);
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -111,6 +112,7 @@ export default function Terminal() {
   const onCheckOutSwipe = () => {
     if (!checkoutTarget) return;
     setSelectedPaymentId(null);
+    setPaymentPhone('');
     setPendingCheckOut(checkoutTarget);
   };
 
@@ -122,23 +124,33 @@ export default function Terminal() {
   }, [pendingCheckOut]);
 
   const confirmCheckOut = async () => {
-    if (!pendingCheckOut || !selectedPaymentId || loading) return;
+    if (!pendingCheckOut || !selectedPaymentId || paymentPhone.length !== 9 || loading) return;
     setLoading(true);
+    const startedAt = Date.now();
+    const waitMinLoading = () => {
+      const remaining = 5000 - (Date.now() - startedAt);
+      return remaining > 0 ? new Promise((resolve) => setTimeout(resolve, remaining)) : Promise.resolve();
+    };
     try {
       const { data } = await api.post(`/parking/check-out/${pendingCheckOut.id}`, {
         payment_method_id: selectedPaymentId,
+        payment_phone: `+251${paymentPhone}`,
       });
+      await waitMinLoading();
       setPendingCheckOut(null);
       setCheckoutTarget(null);
       setSelectedPaymentId(null);
+      setPaymentPhone('');
       setCheckoutSwipeKey((k) => k + 1);
       setCompletedInvoice(data.invoice);
       setShowCheckoutSuccess(true);
       fetchData();
     } catch (err) {
+      await waitMinLoading();
       setPendingCheckOut(null);
       setCheckoutTarget(null);
       setSelectedPaymentId(null);
+      setPaymentPhone('');
       setCheckoutSwipeKey((k) => k + 1);
       setErrorMsg(err.response?.data?.error || 'Check-out failed');
       setShowError(true);
@@ -150,7 +162,13 @@ export default function Terminal() {
   const cancelCheckOut = () => {
     setPendingCheckOut(null);
     setSelectedPaymentId(null);
+    setPaymentPhone('');
     setCheckoutSwipeKey((k) => k + 1);
+  };
+
+  const handleSelectPayment = (id) => {
+    setSelectedPaymentId(id);
+    setPaymentPhone('');
   };
 
   const handlePrintReceipt = () => {
@@ -183,7 +201,11 @@ export default function Terminal() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, checkoutTarget && styles.scrollWithBar]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          checkoutTarget && !pendingCheckOut && styles.scrollWithBar,
+          pendingCheckOut && styles.scrollWithConfirm,
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.blue} />}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -198,26 +220,30 @@ export default function Terminal() {
         </View>
 
         <Text style={styles.sectionTitle}>Check In</Text>
-        <View style={styles.sectionCard}>
-          <Text style={styles.fieldLabel}>Plate number</Text>
-          <TextInput
-            style={styles.plateInput}
-            value={plate}
-            onChangeText={setPlate}
-            placeholder="AA 12345"
-            placeholderTextColor={theme.label}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            returnKeyType="done"
-          />
-          <SwipeButton
-            label="Swipe to Check In"
-            hint="Slide right to confirm"
-            color={theme.dark}
-            onComplete={onCheckInSwipe}
-            disabled={!plate.trim() || !!pendingCheckIn}
-            resetKey={`${swipeKey}-${plate}`}
-          />
+        <View style={styles.listGroup}>
+          <View style={styles.checkInRow}>
+            <TextInput
+              style={styles.checkInPlateInput}
+              value={plate}
+              onChangeText={setPlate}
+              placeholder="Plate number"
+              placeholderTextColor={theme.label}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="done"
+              {...webInput}
+            />
+          </View>
+          <View style={styles.checkInSwipe}>
+            <SwipeButton
+              label="Swipe to Check In"
+              hint="Slide right to confirm"
+              color={theme.dark}
+              onComplete={onCheckInSwipe}
+              disabled={!plate.trim() || !!pendingCheckIn}
+              resetKey={`${swipeKey}-${plate}`}
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>On Premises ({sessions.length})</Text>
@@ -261,7 +287,7 @@ export default function Terminal() {
         )}
       </ScrollView>
 
-      {checkoutTarget && (
+      {checkoutTarget && !pendingCheckOut && (
         <SafeAreaView style={styles.bottomSheet} edges={['bottom']}>
           <View style={styles.sheetHandle} />
           <View style={styles.sheetHeader}>
@@ -291,7 +317,9 @@ export default function Terminal() {
         session={pendingCheckOut}
         paymentMethods={paymentMethods}
         selectedPaymentId={selectedPaymentId}
-        onSelectPayment={setSelectedPaymentId}
+        paymentPhone={paymentPhone}
+        onSelectPayment={handleSelectPayment}
+        onPhoneChange={setPaymentPhone}
         onConfirm={confirmCheckOut}
         onCancel={cancelCheckOut}
         loading={loading}
@@ -339,6 +367,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: theme.space.md, paddingBottom: 32 },
   scrollWithBar: { paddingBottom: 180 },
+  scrollWithConfirm: { paddingBottom: 32 },
   heroCard: {
     backgroundColor: theme.surface,
     borderRadius: theme.radius.lg,
@@ -368,7 +397,26 @@ const styles = StyleSheet.create({
     padding: theme.space.md,
     marginBottom: theme.space.lg,
   },
-  fieldLabel: { fontSize: 13, color: theme.label, marginBottom: theme.space.xs, fontFamily: theme.font },
+  checkInRow: {
+    paddingVertical: 14,
+    paddingHorizontal: theme.space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.separator,
+  },
+  checkInPlateInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: theme.dark,
+    fontFamily: theme.mono,
+    letterSpacing: 1,
+    padding: 0,
+    margin: 0,
+    ...webInput,
+  },
+  checkInSwipe: {
+    paddingHorizontal: theme.space.md,
+    paddingVertical: 12,
+  },
   plateInput: {
     backgroundColor: theme.bg,
     borderRadius: theme.radius.md,

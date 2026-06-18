@@ -11,7 +11,7 @@ export default {
     splash: {
       image: './assets/icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#000000',
+      backgroundColor: '#F2F2F7',
     },
     scheme: 'airportparking',
     android: {
