@@ -15,7 +15,12 @@ import {
   ReceiptPreviewModal,
   ErrorDialog,
 } from '../src/components/ParkingDialog';
-import { downloadReceipt, prepareReceiptBlob, downloadReceiptBlob } from '../src/lib/receipt';
+import {
+  downloadReceipt,
+  prepareReceiptDownload,
+  triggerReceiptDownloadSync,
+  getReceiptFilename,
+} from '../src/lib/receipt';
 import { loadBranding } from '../src/lib/branding';
 import { useBranding } from '../src/hooks/useBranding';
 import { BRAND_RED, BRAND_RED_LIGHT } from '../src/lib/brand';
@@ -39,6 +44,7 @@ export default function Terminal() {
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [receiptBlob, setReceiptBlob] = useState(null);
+  const [receiptDataUrl, setReceiptDataUrl] = useState(null);
   const [receiptReady, setReceiptReady] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -187,12 +193,14 @@ export default function Terminal() {
     setShowCheckoutSuccess(false);
     setCompletedInvoice(null);
     setReceiptBlob(null);
+    setReceiptDataUrl(null);
     setReceiptReady(false);
   };
 
   useEffect(() => {
     if (!completedInvoice) {
       setReceiptBlob(null);
+      setReceiptDataUrl(null);
       setReceiptReady(false);
       return undefined;
     }
@@ -200,17 +208,20 @@ export default function Terminal() {
     let alive = true;
     setReceiptReady(false);
     setReceiptBlob(null);
+    setReceiptDataUrl(null);
 
-    prepareReceiptBlob(completedInvoice)
-      .then((blob) => {
+    prepareReceiptDownload(completedInvoice)
+      .then(({ blob, dataUrl }) => {
         if (alive) {
           setReceiptBlob(blob);
+          setReceiptDataUrl(dataUrl);
           setReceiptReady(true);
         }
       })
       .catch(() => {
         if (alive) {
           setReceiptBlob(null);
+          setReceiptDataUrl(null);
           setReceiptReady(false);
         }
       });
@@ -218,28 +229,43 @@ export default function Terminal() {
     return () => { alive = false; };
   }, [completedInvoice]);
 
-  const handleDownloadReceipt = async () => {
-    if (!completedInvoice || downloadingReceipt) return;
-    if (Platform.OS === 'web' && !receiptReady) return;
+  const handleDownloadReceipt = () => {
+    if (!completedInvoice) return;
+
+    const filename = getReceiptFilename(completedInvoice);
+    const isMobileWeb = Platform.OS === 'web'
+      && typeof navigator !== 'undefined'
+      && /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+
+    if (Platform.OS === 'web' && receiptDataUrl) {
+      triggerReceiptDownloadSync(receiptDataUrl, filename);
+      if (isMobileWeb) {
+        setReceiptPreview({ dataUrl: receiptDataUrl, invoice: completedInvoice });
+      }
+      return;
+    }
+
+    if (Platform.OS === 'web' && !receiptReady) {
+      setErrorMsg('Receipt is still preparing. Wait a moment and try again.');
+      setShowError(true);
+      return;
+    }
 
     setDownloadingReceipt(true);
-    try {
-      const result = Platform.OS === 'web' && receiptBlob
-        ? await downloadReceiptBlob(receiptBlob, completedInvoice)
-        : await downloadReceipt(completedInvoice);
-
-      if (result?.action === 'preview') {
-        setReceiptPreview({
-          dataUrl: result.dataUrl,
-          invoice: completedInvoice,
-        });
-      }
-    } catch {
-      setErrorMsg('Could not save receipt image. Try again.');
-      setShowError(true);
-    } finally {
-      setDownloadingReceipt(false);
-    }
+    downloadReceipt(completedInvoice)
+      .then((result) => {
+        if (result?.dataUrl || result?.action === 'preview') {
+          setReceiptPreview({
+            dataUrl: result.dataUrl,
+            invoice: completedInvoice,
+          });
+        }
+      })
+      .catch(() => {
+        setErrorMsg('Could not save receipt. Try again.');
+        setShowError(true);
+      })
+      .finally(() => setDownloadingReceipt(false));
   };
 
   const handleLogout = async () => {
@@ -411,6 +437,7 @@ export default function Terminal() {
         onDone={handleCheckoutDone}
         downloading={downloadingReceipt}
         receiptReady={receiptReady}
+        receiptPreparing={!receiptReady && !!completedInvoice}
       />
       <ReceiptPreviewModal
         visible={!!receiptPreview}

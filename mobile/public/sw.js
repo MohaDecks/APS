@@ -1,4 +1,4 @@
-const CACHE_NAME = 'airport-parking-v3';
+const CACHE_NAME = 'dirsh-parking-v5';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

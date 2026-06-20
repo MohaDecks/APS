@@ -3,6 +3,7 @@ import Invoice from '../models/Invoice.js';
 import User from '../models/User.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { toApi, toApiList } from '../utils/format.js';
+import { renderReceiptPng } from '../utils/receiptRender.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -35,6 +36,23 @@ router.get('/', async (req, res) => {
 
   const invoices = await Invoice.find(filter).sort({ created_at: -1 }).limit(200);
   res.json(await enrichInvoices(invoices));
+});
+
+router.get('/number/:number/receipt.png', async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ invoice_number: req.params.number });
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const png = await renderReceiptPng(invoice);
+    const filename = `${invoice.invoice_number}.png`;
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(png);
+  } catch (err) {
+    console.error('GET receipt.png failed:', err);
+    res.status(500).json({ error: 'Failed to generate receipt image' });
+  }
 });
 
 router.get('/number/:number', async (req, res) => {

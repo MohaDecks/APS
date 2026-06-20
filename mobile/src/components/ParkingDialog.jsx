@@ -4,7 +4,7 @@ import {
 import { useEffect, useState } from 'react';
 import { playSuccessSound } from '../lib/sound';
 import { resolveAssetUrl } from '../lib/api';
-import { receiptActionLabel, copyReceiptText, saveReceiptPngFile } from '../lib/receipt';
+import { receiptActionLabel, copyReceiptText, triggerReceiptDownloadSync, getReceiptFilename } from '../lib/receipt';
 import { BRAND_RED, BRAND_RED_LIGHT, CHECKOUT_BTN } from '../lib/brand';
 import { useBranding } from '../hooks/useBranding';
 import ReceiptTicket from './ReceiptTicket';
@@ -283,7 +283,9 @@ export function ConfirmCheckOutDialog({
   );
 }
 
-export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, downloading, receiptReady = true }) {
+export function CheckOutSuccessDialog({
+  visible, invoice, onDownload, onDone, downloading, receiptReady = true, receiptPreparing = false,
+}) {
   useEffect(() => {
     if (visible) playSuccessSound();
   }, [visible]);
@@ -301,12 +303,14 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.primaryBtn, styles.payBtn, (downloading || !receiptReady) && styles.btnDisabled]}
+        style={[styles.primaryBtn, styles.payBtn, (downloading || (receiptPreparing && !receiptReady)) && styles.btnDisabled]}
         onPress={onDownload}
-        disabled={downloading || !receiptReady}
+        disabled={downloading || (receiptPreparing && !receiptReady)}
       >
-        {downloading || !receiptReady ? (
+        {downloading ? (
           <ActivityIndicator color="#fff" />
+        ) : !receiptReady && receiptPreparing ? (
+          <Text style={styles.primaryBtnText}>Preparing receipt…</Text>
         ) : (
           <Text style={styles.primaryBtnText}>{receiptActionLabel()}</Text>
         )}
@@ -324,18 +328,16 @@ export function ReceiptPreviewModal({ visible, dataUrl, invoice, onClose }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSavePng = async () => {
+  const handleSavePng = () => {
     if (!invoice || saving) return;
-    setSaving(true);
-    try {
-      await saveReceiptPngFile(invoice);
+    if (dataUrl) {
+      triggerReceiptDownloadSync(dataUrl, getReceiptFilename(invoice));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      /* ignore */
-    } finally {
-      setSaving(false);
+      return;
     }
+    setSaving(true);
+    setSaving(false);
   };
 
   const handleCopy = async () => {

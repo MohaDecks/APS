@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { formatETB, formatDuration, resolveAssetUrl } from './api';
+import api from './api';
 import { BRAND_NAME } from './brand';
 import { getBranding, getBrandingLogoUri } from './branding';
 
@@ -206,6 +207,25 @@ function pngFilenameFor(invoice) {
   return `${base}.png`;
 }
 
+export function getReceiptFilename(invoice) {
+  return pngFilenameFor(invoice);
+}
+
+/** Synchronous save — must run inside click handler (before any await). */
+export function triggerReceiptDownloadSync(dataUrl, filename) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined' || !dataUrl) return false;
+
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = filename || 'receipt.png';
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  return true;
+}
+
 export function isInAppWebView() {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
 
@@ -267,7 +287,7 @@ function drawBarcode(ctx, x, y, maxW, code) {
   }
 }
 
-async function renderReceiptCanvas(invoice) {
+async function renderReceiptCanvas(invoice, skipLogo = false) {
   const width = TICKET_W;
   const innerW = width - PAD * 2;
   const height = 540;
@@ -287,7 +307,7 @@ async function renderReceiptCanvas(invoice) {
 
   let y = PAD;
 
-  const logoUri = getFacilityLogoUri(invoice);
+  const logoUri = skipLogo ? null : getFacilityLogoUri(invoice);
   let drewLogo = false;
 
   if (logoUri) {
@@ -384,33 +404,77 @@ export async function buildReceiptDataUrl(invoice) {
 }
 
 async function buildReceiptPngBlob(invoice) {
-  const canvas = await renderReceiptCanvas(invoice);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          resolve(blob);
-          return;
-        }
-        try {
-          const dataUrl = canvas.toDataURL('image/png');
-          fetch(dataUrl)
-            .then((r) => r.blob())
-            .then(resolve)
-            .catch(() => reject(new Error('Failed to create receipt image')));
-        } catch {
-          reject(new Error('Failed to create receipt image'));
-        }
-      },
-      'image/png',
-      1,
-    );
-  });
+  const attempt = async (skipLogo) => {
+    const canvas = await renderReceiptCanvas(invoice, skipLogo);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            fetch(dataUrl)
+              .then((r) => r.blob())
+              .then(resolve)
+              .catch(() => reject(new Error('Failed to create receipt image')));
+          } catch {
+            reject(new Error('Failed to create receipt image'));
+          }
+        },
+        'image/png',
+        1,
+      );
+    });
+  };
+
+  try {
+    return await attempt(false);
+  } catch {
+    return attempt(true);
+  }
 }
 
 /** Pre-generate receipt PNG (call after checkout so download is instant). */
 export async function prepareReceiptBlob(invoice) {
   return buildReceiptPngBlob(invoice);
+}
+
+function shouldUseServerReceipt() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  const { hostname } = window.location;
+  return hostname !== 'localhost' && hostname !== '127.0.0.1';
+}
+
+async function fetchReceiptPngFromApi(invoice) {
+  const num = encodeURIComponent(invoice.invoice_number);
+  const { data } = await api.get(`/invoices/number/${num}/receipt.png`, {
+    responseType: 'arraybuffer',
+    timeout: 30000,
+  });
+  return new Blob([data], { type: 'image/png' });
+}
+
+/** Pre-generate blob + dataUrl for instant synchronous download on button click. */
+export async function prepareReceiptDownload(invoice) {
+  if (shouldUseServerReceipt()) {
+    const blob = await fetchReceiptPngFromApi(invoice);
+    const dataUrl = await blobToDataUrl(blob);
+    return {
+      blob,
+      dataUrl,
+      filename: pngFilenameFor(invoice),
+    };
+  }
+
+  const blob = await buildReceiptPngBlob(invoice);
+  const dataUrl = await blobToDataUrl(blob);
+  return {
+    blob,
+    dataUrl,
+    filename: pngFilenameFor(invoice),
+  };
 }
 
 async function blobToDataUrl(blob) {
@@ -423,31 +487,21 @@ async function blobToDataUrl(blob) {
 }
 
 async function downloadBlobWeb(blob, filename) {
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const dataUrl = await blobToDataUrl(blob);
+  if (triggerReceiptDownloadSync(dataUrl, filename)) return;
 
-  const clickLink = (href) => {
+  const url = URL.createObjectURL(blob);
+  try {
     const link = document.createElement('a');
-    link.href = href;
+    link.href = url;
     link.download = filename;
     link.rel = 'noopener';
     link.style.display = 'none';
     document.body.appendChild(link);
-    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    link.click();
     document.body.removeChild(link);
-  };
-
-  if (isIOS) {
-    const dataUrl = await blobToDataUrl(blob);
-    clickLink(dataUrl);
-    return;
-  }
-
-  const url = URL.createObjectURL(blob);
-  try {
-    clickLink(url);
   } finally {
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 }
 
@@ -518,13 +572,17 @@ export async function copyReceiptText(invoice) {
   }
 }
 
-async function deliverReceiptBlob(blob, invoice) {
+async function deliverReceiptBlob(blob, invoice, cachedDataUrl) {
   const filename = pngFilenameFor(invoice);
-  const dataUrl = await blobToDataUrl(blob);
+  const dataUrl = cachedDataUrl || await blobToDataUrl(blob);
 
   if (isInAppWebView()) {
     const saved = await tryNativeAppSave(dataUrl, invoice);
     if (saved) return { action: 'saved', filename, dataUrl };
+  }
+
+  if (Platform.OS === 'web' && triggerReceiptDownloadSync(dataUrl, filename)) {
+    return { action: 'saved', filename, dataUrl };
   }
 
   try {
@@ -550,11 +608,11 @@ async function deliverReceiptBlob(blob, invoice) {
 }
 
 /** Download a pre-generated receipt PNG (keeps browser user-gesture for save). */
-export async function downloadReceiptBlob(blob, invoice) {
+export async function downloadReceiptBlob(blob, invoice, dataUrl) {
   if (Platform.OS !== 'web') {
     return downloadReceipt(invoice);
   }
-  return deliverReceiptBlob(blob, invoice);
+  return deliverReceiptBlob(blob, invoice, dataUrl);
 }
 
 /** Generate receipt PNG and save to device (download / share / native app). */

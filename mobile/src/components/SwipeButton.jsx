@@ -25,14 +25,13 @@ export default function SwipeButton({
   const [width, setWidth] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const [locked, setLocked] = useState(false);
+  const trackRef = useRef(null);
 
   const widthRef = useRef(0);
   const maxSlideRef = useRef(0);
   const disabledRef = useRef(disabled);
   const lockedRef = useRef(locked);
   const currentDx = useRef(0);
-  const dragging = useRef(false);
-  const startClientX = useRef(0);
 
   useEffect(() => { disabledRef.current = disabled; }, [disabled]);
   useEffect(() => { lockedRef.current = locked; }, [locked]);
@@ -101,72 +100,66 @@ export default function SwipeButton({
     },
   }), [canInteract, finishSwipe, setSlide, translateX]);
 
-  const pointerDown = useCallback((clientX) => {
-    if (!canInteract()) return;
-    dragging.current = true;
-    startClientX.current = clientX;
-    translateX.stopAnimation();
-    currentDx.current = 0;
-  }, [canInteract, translateX]);
-
-  const pointerMove = useCallback((clientX) => {
-    if (!dragging.current) return;
-    setSlide(clientX - startClientX.current);
-  }, [setSlide]);
-
-  const pointerUp = useCallback(() => {
-    if (!dragging.current) return;
-    dragging.current = false;
-    finishSwipe(currentDx.current);
-  }, [finishSwipe]);
-
+  // Web: native listeners (non-passive) — avoids React passive touch + preventDefault spam
   useEffect(() => {
-    if (!isWeb) return;
-    const onMouseMove = (e) => pointerMove(e.clientX);
-    const onTouchMove = (e) => {
-      if (!dragging.current) return;
-      const x = e.touches?.[0]?.clientX;
-      if (x != null) pointerMove(x);
-      e.preventDefault();
+    if (!isWeb || !trackRef.current) return undefined;
+
+    const node = trackRef.current;
+    const dom = node._node ?? node;
+    if (!dom || typeof dom.addEventListener !== 'function') return undefined;
+
+    let dragging = false;
+    let startX = 0;
+
+    const onDown = (clientX) => {
+      if (!canInteract()) return;
+      dragging = true;
+      startX = clientX;
+      translateX.stopAnimation();
+      currentDx.current = 0;
     };
-    const onUp = () => pointerUp();
-    window.addEventListener('mousemove', onMouseMove);
+
+    const onMove = (clientX, e) => {
+      if (!dragging) return;
+      setSlide(clientX - startX);
+      if (e?.cancelable) e.preventDefault();
+    };
+
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      finishSwipe(currentDx.current);
+    };
+
+    const mouseDown = (e) => onDown(e.clientX);
+    const mouseMove = (e) => onMove(e.clientX, e);
+    const touchStart = (e) => {
+      const x = e.touches?.[0]?.clientX;
+      if (x != null) onDown(x);
+    };
+    const touchMove = (e) => {
+      const x = e.touches?.[0]?.clientX;
+      if (x != null) onMove(x, e);
+    };
+
+    dom.addEventListener('mousedown', mouseDown);
+    dom.addEventListener('touchstart', touchStart, { passive: true });
+    dom.addEventListener('touchmove', touchMove, { passive: false });
+    window.addEventListener('mousemove', mouseMove);
     window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onUp);
     window.addEventListener('touchcancel', onUp);
+
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
+      dom.removeEventListener('mousedown', mouseDown);
+      dom.removeEventListener('touchstart', touchStart);
+      dom.removeEventListener('touchmove', touchMove);
+      window.removeEventListener('mousemove', mouseMove);
       window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
       window.removeEventListener('touchcancel', onUp);
     };
-  }, [pointerMove, pointerUp]);
-
-  const webHandlers = isWeb ? {
-    onMouseDown: (e) => {
-      const ne = e.nativeEvent ?? e;
-      const x = ne.touches?.[0]?.clientX ?? ne.clientX;
-      if (x != null) pointerDown(x);
-      e.preventDefault?.();
-    },
-    onTouchStart: (e) => {
-      const ne = e.nativeEvent ?? e;
-      const x = ne.touches?.[0]?.clientX;
-      if (x != null) pointerDown(x);
-      e.preventDefault?.();
-    },
-    onTouchMove: (e) => {
-      if (!dragging.current) return;
-      const ne = e.nativeEvent ?? e;
-      const x = ne.touches?.[0]?.clientX;
-      if (x != null) pointerMove(x);
-      e.preventDefault?.();
-    },
-    onTouchEnd: pointerUp,
-    onTouchCancel: pointerUp,
-  } : {};
+  }, [canInteract, finishSwipe, setSlide, translateX, width]);
 
   const bg = locked ? completedColor : disabled ? '#e5e5ea' : color;
   const thumbTop = (HEIGHT - THUMB) / 2;
@@ -176,6 +169,7 @@ export default function SwipeButton({
     <View style={styles.wrap}>
       <View style={styles.container} onLayout={onLayout}>
         <View
+          ref={trackRef}
           style={[
             styles.track,
             {
@@ -184,8 +178,7 @@ export default function SwipeButton({
               borderColor: disabled && !locked ? '#e5e5ea' : locked ? completedColor : BRAND_RED_DARK,
             },
           ]}
-          {...panResponder.panHandlers}
-          {...webHandlers}
+          {...(!isWeb ? panResponder.panHandlers : {})}
         >
           <View style={styles.labelWrap} pointerEvents="none">
             <Text
@@ -230,9 +223,11 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: HEIGHT / 2,
     overflow: 'hidden',
+    ...(isWeb ? { touchAction: 'none' } : {}),
   },
   container: {
     width: '100%',
+    ...(isWeb ? { touchAction: 'none' } : {}),
   },
   track: {
     width: '100%',
@@ -242,6 +237,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',
+    cursor: isWeb ? 'grab' : undefined,
     ...(isWeb ? { touchAction: 'none', userSelect: 'none' } : {}),
   },
   labelWrap: {
