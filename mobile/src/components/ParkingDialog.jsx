@@ -283,7 +283,7 @@ export function ConfirmCheckOutDialog({
   );
 }
 
-export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, downloading }) {
+export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, downloading, receiptReady = true }) {
   useEffect(() => {
     if (visible) playSuccessSound();
   }, [visible]);
@@ -301,11 +301,11 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.primaryBtn, styles.payBtn, downloading && styles.btnDisabled]}
+        style={[styles.primaryBtn, styles.payBtn, (downloading || !receiptReady) && styles.btnDisabled]}
         onPress={onDownload}
-        disabled={downloading}
+        disabled={downloading || !receiptReady}
       >
-        {downloading ? (
+        {downloading || !receiptReady ? (
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.primaryBtnText}>{receiptActionLabel()}</Text>

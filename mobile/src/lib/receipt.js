@@ -225,13 +225,26 @@ export function isInAppWebView() {
 }
 
 function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Image load failed: ${url}`));
-    img.src = url;
-  });
+  return fetch(url, { mode: 'cors', credentials: 'omit' })
+    .then((res) => {
+      if (!res.ok) throw new Error(`Image fetch failed: ${url}`);
+      return res.blob();
+    })
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error(`Image decode failed: ${url}`));
+        };
+        img.src = objectUrl;
+      });
+    });
 }
 
 function drawSolidLine(ctx, x, y, w) {
@@ -374,11 +387,30 @@ async function buildReceiptPngBlob(invoice) {
   const canvas = await renderReceiptCanvas(invoice);
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Failed to create receipt image'))),
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          fetch(dataUrl)
+            .then((r) => r.blob())
+            .then(resolve)
+            .catch(() => reject(new Error('Failed to create receipt image')));
+        } catch {
+          reject(new Error('Failed to create receipt image'));
+        }
+      },
       'image/png',
       1,
     );
   });
+}
+
+/** Pre-generate receipt PNG (call after checkout so download is instant). */
+export async function prepareReceiptBlob(invoice) {
+  return buildReceiptPngBlob(invoice);
 }
 
 async function blobToDataUrl(blob) {
@@ -399,9 +431,10 @@ async function downloadBlobWeb(blob, filename) {
     link.href = href;
     link.download = filename;
     link.rel = 'noopener';
+    link.style.display = 'none';
     document.body.appendChild(link);
-    link.click();
-    link.remove();
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    document.body.removeChild(link);
   };
 
   if (isIOS) {
@@ -485,48 +518,60 @@ export async function copyReceiptText(invoice) {
   }
 }
 
-/** Generate receipt PNG and save to device (download / share / native app). */
-export async function saveReceiptPngFile(invoice) {
-  if (Platform.OS !== 'web') {
-    return downloadReceipt(invoice);
-  }
-
+async function deliverReceiptBlob(blob, invoice) {
   const filename = pngFilenameFor(invoice);
-  const blob = await buildReceiptPngBlob(invoice);
   const dataUrl = await blobToDataUrl(blob);
 
   if (isInAppWebView()) {
     const saved = await tryNativeAppSave(dataUrl, invoice);
-    if (saved) return { action: 'saved', filename };
+    if (saved) return { action: 'saved', filename, dataUrl };
   }
 
-  // Direct file download first (desktop + mobile)
   try {
     await downloadBlobWeb(blob, filename);
-    return { action: 'saved', filename };
+    return { action: 'saved', filename, dataUrl };
   } catch {
     /* fall through */
   }
 
-  // Last resort: system share sheet (Save to Photos / Files)
   if (isMobileWebBrowser() && typeof navigator?.share === 'function') {
     try {
       const file = new File([blob], filename, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: 'Parking Receipt' });
-        return { action: 'saved', filename };
+        return { action: 'saved', filename, dataUrl };
       }
     } catch (err) {
       if (err?.name === 'AbortError') throw err;
     }
   }
 
-  throw new Error('Could not save receipt');
+  return { action: 'preview', dataUrl, filename, text: buildReceiptText(invoice) };
+}
+
+/** Download a pre-generated receipt PNG (keeps browser user-gesture for save). */
+export async function downloadReceiptBlob(blob, invoice) {
+  if (Platform.OS !== 'web') {
+    return downloadReceipt(invoice);
+  }
+  return deliverReceiptBlob(blob, invoice);
+}
+
+/** Generate receipt PNG and save to device (download / share / native app). */
+export async function saveReceiptPngFile(invoice) {
+  if (Platform.OS !== 'web') {
+    return downloadReceipt(invoice);
+  }
+
+  const blob = await buildReceiptPngBlob(invoice);
+  return deliverReceiptBlob(blob, invoice);
 }
 
 async function saveReceiptImageWeb(invoice) {
   try {
-    return await saveReceiptPngFile(invoice);
+    const result = await saveReceiptPngFile(invoice);
+    if (result.action === 'saved') return result;
+    return result;
   } catch (err) {
     if (err?.name === 'AbortError') return { action: 'cancelled' };
     const dataUrl = await buildReceiptDataUrl(invoice);

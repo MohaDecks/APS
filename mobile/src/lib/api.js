@@ -39,7 +39,19 @@ export async function getUser() {
 
 export function resolveAssetUrl(path) {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
   const base = getApiUrl().replace(/\/$/, '');
+
+  if (path.startsWith('http')) {
+    try {
+      const parsed = new URL(path);
+      if (parsed.pathname.startsWith('/api/uploads')) {
+        return `${base}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      /* keep original URL */
+    }
+    return path;
+  }
+
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }

@@ -18,7 +18,11 @@ app.use(cors());
 app.use(express.json());
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', database: 'mongodb' }));
 
