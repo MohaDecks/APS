@@ -12,14 +12,16 @@ import {
   ConfirmCheckOutDialog,
   CheckInBottomSheet,
   CheckOutSuccessDialog,
-  ReceiptPreviewModal,
   ErrorDialog,
 } from '../src/components/ParkingDialog';
 import {
   downloadReceipt,
+  downloadReceiptBlob,
   prepareReceiptDownload,
   triggerReceiptDownloadSync,
+  triggerBlobDownloadSync,
   getReceiptFilename,
+  isInAppWebView,
 } from '../src/lib/receipt';
 import { loadBranding } from '../src/lib/branding';
 import { useBranding } from '../src/hooks/useBranding';
@@ -46,7 +48,6 @@ export default function Terminal() {
   const [receiptBlob, setReceiptBlob] = useState(null);
   const [receiptDataUrl, setReceiptDataUrl] = useState(null);
   const [receiptReady, setReceiptReady] = useState(false);
-  const [receiptPreview, setReceiptPreview] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -233,37 +234,42 @@ export default function Terminal() {
     if (!completedInvoice) return;
 
     const filename = getReceiptFilename(completedInvoice);
-    const isMobileWeb = Platform.OS === 'web'
-      && typeof navigator !== 'undefined'
-      && /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+    const inEmbed = Platform.OS === 'web'
+      && (isInAppWebView() || (typeof window !== 'undefined' && typeof window.DirshayApp?.postMessage === 'function'));
 
-    if (Platform.OS === 'web' && receiptDataUrl) {
-      triggerReceiptDownloadSync(receiptDataUrl, filename);
-      if (isMobileWeb) {
-        setReceiptPreview({ dataUrl: receiptDataUrl, invoice: completedInvoice });
-      }
+    if (Platform.OS === 'web' && inEmbed && (receiptBlob || receiptDataUrl)) {
+      setDownloadingReceipt(true);
+      downloadReceiptBlob(receiptBlob, completedInvoice, receiptDataUrl)
+        .catch(() => {
+          setErrorMsg('Could not save invoice. Allow Photos access for Dirsha in phone Settings.');
+          setShowError(true);
+        })
+        .finally(() => setDownloadingReceipt(false));
       return;
     }
 
-    if (Platform.OS === 'web' && !receiptReady) {
-      setErrorMsg('Receipt is still preparing. Wait a moment and try again.');
-      setShowError(true);
+    const finish = () => handleCheckoutDone();
+
+    if (Platform.OS === 'web') {
+      if (receiptBlob) {
+        triggerBlobDownloadSync(receiptBlob, filename);
+        finish();
+        return;
+      }
+
+      if (receiptDataUrl) {
+        triggerReceiptDownloadSync(receiptDataUrl, filename);
+        finish();
+        return;
+      }
+
       return;
     }
 
     setDownloadingReceipt(true);
     downloadReceipt(completedInvoice)
       .then((result) => {
-        if (result?.dataUrl || result?.action === 'preview') {
-          setReceiptPreview({
-            dataUrl: result.dataUrl,
-            invoice: completedInvoice,
-          });
-        }
-      })
-      .catch(() => {
-        setErrorMsg('Could not save receipt. Try again.');
-        setShowError(true);
+        if (result?.action === 'saved') finish();
       })
       .finally(() => setDownloadingReceipt(false));
   };
@@ -438,12 +444,6 @@ export default function Terminal() {
         downloading={downloadingReceipt}
         receiptReady={receiptReady}
         receiptPreparing={!receiptReady && !!completedInvoice}
-      />
-      <ReceiptPreviewModal
-        visible={!!receiptPreview}
-        dataUrl={receiptPreview?.dataUrl}
-        invoice={receiptPreview?.invoice}
-        onClose={() => setReceiptPreview(null)}
       />
       <ErrorDialog visible={showError} message={errorMsg} onClose={() => setShowError(false)} />
     </SafeAreaView>

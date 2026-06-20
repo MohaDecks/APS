@@ -7,12 +7,14 @@ import AppShell from '../src/components/AppShell';
 import InstallPrompt from '../src/components/InstallPrompt';
 import { registerServiceWorker, ensurePwaMeta } from '../src/lib/pwa';
 import { loadBranding } from '../src/lib/branding';
+import { initEmbeddedMode } from '../src/lib/receipt';
 import { theme } from '../src/lib/theme';
 
 export default function RootLayout() {
   useEffect(() => {
     loadBranding();
     if (Platform.OS === 'web') {
+      initEmbeddedMode();
       ensurePwaMeta();
       registerServiceWorker();
     }

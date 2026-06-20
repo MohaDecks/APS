@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(220, 38, 38, 0.14)',
+    backgroundColor: 'rgba(184, 6, 17, 0.14)',
   },
   glowBottom: {
     position: 'absolute',
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+    backgroundColor: 'rgba(184, 6, 17, 0.08)',
   },
   scroll: {
     flexGrow: 1,

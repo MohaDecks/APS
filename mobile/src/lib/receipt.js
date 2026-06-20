@@ -50,7 +50,7 @@ function ticketStylesHtml() {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    background: #dbeafe; padding: 32px;
+    background: #fef2f2; padding: 32px;
     display: flex; justify-content: center;
   }
   .ticket {
@@ -212,22 +212,62 @@ export function getReceiptFilename(invoice) {
 }
 
 /** Synchronous save — must run inside click handler (before any await). */
-export function triggerReceiptDownloadSync(dataUrl, filename) {
-  if (Platform.OS !== 'web' || typeof document === 'undefined' || !dataUrl) return false;
-
+function clickDownloadLink(href, filename) {
   const link = document.createElement('a');
-  link.href = dataUrl;
+  link.href = href;
   link.download = filename || 'receipt.png';
   link.rel = 'noopener';
   link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+/** Synchronous save in the same click handler (required by mobile browsers). */
+export function triggerReceiptDownloadSync(dataUrl, filename) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined' || !dataUrl) return false;
+  clickDownloadLink(dataUrl, filename);
   return true;
+}
+
+export function triggerBlobDownloadSync(blob, filename) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined' || !blob) return false;
+  const url = URL.createObjectURL(blob);
+  try {
+    clickDownloadLink(url, filename);
+    return true;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+}
+
+export function initEmbeddedMode() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('embedded') === '1' || params.get('inApp') === '1') {
+      sessionStorage.setItem('dirsha_embedded', '1');
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function receiptApiUrl(invoice) {
+  if (typeof window === 'undefined') return '';
+  const num = encodeURIComponent(invoice?.invoice_number || '');
+  if (!num) return '';
+  return `${window.location.origin}/api/invoices/number/${num}/receipt.png`;
 }
 
 export function isInAppWebView() {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+
+  try {
+    if (sessionStorage.getItem('dirsha_embedded') === '1') return true;
+  } catch {
+    /* ignore */
+  }
 
   const params = new URLSearchParams(window.location.search);
   if (params.get('inApp') === '1' || params.get('embedded') === '1') return true;
@@ -487,39 +527,9 @@ async function blobToDataUrl(blob) {
 }
 
 async function downloadBlobWeb(blob, filename) {
+  if (triggerBlobDownloadSync(blob, filename)) return;
   const dataUrl = await blobToDataUrl(blob);
-  if (triggerReceiptDownloadSync(dataUrl, filename)) return;
-
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.rel = 'noopener';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } finally {
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-  }
-}
-
-function isMobileWebBrowser() {
-  if (typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod|android/i.test(navigator.userAgent);
-}
-
-async function shareBlobWeb(blob, filename, title) {
-  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-    throw new Error('Share unavailable');
-  }
-  const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title });
-    return;
-  }
-  await navigator.share({ title, text: title });
+  triggerReceiptDownloadSync(dataUrl, filename);
 }
 
 async function tryNativeAppSave(dataUrl, invoice) {
@@ -528,9 +538,28 @@ async function tryNativeAppSave(dataUrl, invoice) {
   const filename = pngFilenameFor(invoice);
   const text = buildReceiptText(invoice);
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-  const payload = { type: 'saveReceipt', filename, mimeType: 'image/png', base64, dataUrl, text };
+  const receiptUrl = receiptApiUrl(invoice);
+  const payload = {
+    type: 'saveReceipt',
+    filename,
+    mimeType: 'image/png',
+    invoiceNumber: invoice?.invoice_number || '',
+    receiptUrl,
+    text,
+  };
+  if (base64 && base64.length < 180000) {
+    payload.base64 = base64;
+    payload.dataUrl = dataUrl;
+  }
 
   const handlers = [
+    () => {
+      if (typeof window.DirshayApp?.postMessage === 'function') {
+        window.DirshayApp.postMessage(JSON.stringify(payload));
+        return true;
+      }
+      return undefined;
+    },
     () => window.flutter_inappwebview?.callHandler?.('saveReceipt', payload),
     () => window.flutter_inappwebview?.callHandler?.('downloadFile', payload),
     () => window.DirshayApp?.saveReceipt?.(JSON.stringify(payload)),
@@ -548,7 +577,10 @@ async function tryNativeAppSave(dataUrl, invoice) {
     }
   }
   try {
-    window.parent?.postMessage?.(payload, '*');
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(JSON.stringify(payload), '*');
+      return true;
+    }
   } catch {
     /* ignore */
   }
@@ -579,32 +611,19 @@ async function deliverReceiptBlob(blob, invoice, cachedDataUrl) {
   if (isInAppWebView()) {
     const saved = await tryNativeAppSave(dataUrl, invoice);
     if (saved) return { action: 'saved', filename, dataUrl };
+    throw new Error('Could not save receipt');
+  }
+
+  if (Platform.OS === 'web' && blob && triggerBlobDownloadSync(blob, filename)) {
+    return { action: 'saved', filename, dataUrl };
   }
 
   if (Platform.OS === 'web' && triggerReceiptDownloadSync(dataUrl, filename)) {
     return { action: 'saved', filename, dataUrl };
   }
 
-  try {
-    await downloadBlobWeb(blob, filename);
-    return { action: 'saved', filename, dataUrl };
-  } catch {
-    /* fall through */
-  }
-
-  if (isMobileWebBrowser() && typeof navigator?.share === 'function') {
-    try {
-      const file = new File([blob], filename, { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Parking Receipt' });
-        return { action: 'saved', filename, dataUrl };
-      }
-    } catch (err) {
-      if (err?.name === 'AbortError') throw err;
-    }
-  }
-
-  return { action: 'preview', dataUrl, filename, text: buildReceiptText(invoice) };
+  await downloadBlobWeb(blob, filename);
+  return { action: 'saved', filename, dataUrl };
 }
 
 /** Download a pre-generated receipt PNG (keeps browser user-gesture for save). */
@@ -626,20 +645,8 @@ export async function saveReceiptPngFile(invoice) {
 }
 
 async function saveReceiptImageWeb(invoice) {
-  try {
-    const result = await saveReceiptPngFile(invoice);
-    if (result.action === 'saved') return result;
-    return result;
-  } catch (err) {
-    if (err?.name === 'AbortError') return { action: 'cancelled' };
-    const dataUrl = await buildReceiptDataUrl(invoice);
-    return {
-      action: 'preview',
-      dataUrl,
-      text: buildReceiptText(invoice),
-      filename: pngFilenameFor(invoice),
-    };
-  }
+  const result = await saveReceiptPngFile(invoice);
+  return result;
 }
 
 async function sharePdfOnNative(html) {
@@ -657,7 +664,7 @@ async function sharePdfOnNative(html) {
 }
 
 export function receiptActionLabel() {
-  return 'Download Receipt';
+  return isInAppWebView() ? 'Save to gallery' : 'Download invoice';
 }
 
 export async function downloadReceipt(invoice) {

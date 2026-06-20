@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(220, 38, 38, 0.12)',
+    backgroundColor: 'rgba(184, 6, 17, 0.12)',
   },
   glowBottom: {
     position: 'absolute',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(220, 38, 38, 0.07)',
+    backgroundColor: 'rgba(184, 6, 17, 0.07)',
   },
   container: {
     flex: 1,
