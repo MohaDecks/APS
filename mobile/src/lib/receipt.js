@@ -65,6 +65,33 @@ function isMobileWeb() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 }
 
+/** True when opened inside Dirshay / Flutter / in-app WebView (not real browser). */
+export function isInAppWebView() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('inApp') === '1' || params.get('embedded') === '1') return true;
+
+  const ua = navigator.userAgent || '';
+
+  if (/;\s*wv\)/i.test(ua) || /\bWebView\b/i.test(ua)) return true;
+  if (/flutter/i.test(ua)) return true;
+
+  if (window.flutter_inappwebview || window.DirshayApp || window.dirshayApp) return true;
+  if (window.Android?.saveReceipt || window.Android?.downloadFile) return true;
+  if (window.webkit?.messageHandlers?.saveReceipt || window.webkit?.messageHandlers?.dirshay) return true;
+
+  // iOS WKWebView: AppleWebKit without a standalone browser token
+  if (/iPhone|iPad|iPod/i.test(ua) && /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Safari/i.test(ua)) {
+    return true;
+  }
+
+  // Mobile but no share API — typical in embedded WebViews
+  if (isMobileWeb() && typeof navigator.share !== 'function') return true;
+
+  return false;
+}
+
 function fmtTime(iso) {
   return (iso || '').replace('T', ' ').slice(0, 19);
 }
@@ -84,8 +111,7 @@ function buildReceiptRows(invoice) {
   return rows;
 }
 
-/** Draw receipt to PNG — works in PWA / mobile browser where HTML download fails. */
-function buildReceiptPngBlob(invoice) {
+function drawReceiptCanvas(invoice) {
   const width = 420;
   const padding = 28;
   const rows = buildReceiptRows(invoice);
@@ -99,7 +125,7 @@ function buildReceiptPngBlob(invoice) {
   canvas.width = width * scale;
   canvas.height = height * scale;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.reject(new Error('Canvas unavailable'));
+  if (!ctx) throw new Error('Canvas unavailable');
 
   ctx.scale(scale, scale);
   ctx.fillStyle = '#ffffff';
@@ -165,8 +191,16 @@ function buildReceiptPngBlob(invoice) {
   ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.fillText(formatETB(invoice.total_fee), width - padding, y + 6);
 
+  return canvas;
+}
+
+export function buildReceiptDataUrl(invoice) {
+  return drawReceiptCanvas(invoice).toDataURL('image/png');
+}
+
+function buildReceiptPngBlob(invoice) {
   return new Promise((resolve, reject) => {
-    canvas.toBlob(
+    drawReceiptCanvas(invoice).toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Failed to create receipt image'))),
       'image/png',
       1,
@@ -186,37 +220,6 @@ async function downloadBlobWeb(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-function showReceiptImagePreview(blob) {
-  const url = URL.createObjectURL(blob);
-  const overlay = document.createElement('div');
-  overlay.style.cssText =
-    'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
-
-  const hint = document.createElement('p');
-  hint.textContent = 'Long press the receipt image → Save to Photos / Files';
-  hint.style.cssText = 'color:#fff;margin:0 0 12px;font:14px -apple-system,sans-serif;text-align:center';
-
-  const img = document.createElement('img');
-  img.src = url;
-  img.alt = 'Parking receipt';
-  img.style.cssText = 'max-width:100%;max-height:70vh;border-radius:10px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
-
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.textContent = 'Close';
-  close.style.cssText =
-    'margin-top:16px;padding:12px 32px;border:none;border-radius:10px;background:#fff;color:#111;font:600 16px -apple-system,sans-serif';
-  close.onclick = () => {
-    overlay.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  overlay.appendChild(hint);
-  overlay.appendChild(img);
-  overlay.appendChild(close);
-  document.body.appendChild(overlay);
-}
-
 async function shareBlobWeb(blob, filename, title) {
   if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
     throw new Error('Share unavailable');
@@ -231,31 +234,95 @@ async function shareBlobWeb(blob, filename, title) {
   await navigator.share({ title, text: title });
 }
 
-async function saveReceiptImageWeb(invoice) {
-  const blob = await buildReceiptPngBlob(invoice);
+/** Ask Dirshay / Flutter native layer to save the receipt file. */
+async function tryNativeAppSave(dataUrl, invoice) {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+
   const filename = pngFilenameFor(invoice);
-  const title = 'Parking Receipt';
+  const text = buildReceiptText(invoice);
+  const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+  const payload = { type: 'saveReceipt', filename, mimeType: 'image/png', base64, dataUrl, text };
+
+  const handlers = [
+    () => window.flutter_inappwebview?.callHandler?.('saveReceipt', payload),
+    () => window.flutter_inappwebview?.callHandler?.('downloadFile', payload),
+    () => window.DirshayApp?.saveReceipt?.(JSON.stringify(payload)),
+    () => window.dirshayApp?.saveReceipt?.(JSON.stringify(payload)),
+    () => window.DirshayApp?.postMessage?.(JSON.stringify(payload)),
+    () => window.dirshayApp?.postMessage?.(JSON.stringify(payload)),
+    () => window.Android?.saveReceipt?.(base64, filename),
+    () => window.Android?.downloadFile?.(base64, filename, 'image/png'),
+    () => window.webkit?.messageHandlers?.saveReceipt?.postMessage(payload),
+    () => window.webkit?.messageHandlers?.dirshay?.postMessage(payload),
+  ];
+
+  for (const run of handlers) {
+    try {
+      const result = await run();
+      if (result !== false) return true;
+    } catch {
+      /* try next bridge */
+    }
+  }
 
   try {
-    await shareBlobWeb(blob, filename, title);
+    window.parent?.postMessage?.(payload, '*');
+  } catch {
+    /* ignore */
+  }
+
+  return false;
+}
+
+export async function copyReceiptText(invoice) {
+  const text = buildReceiptText(invoice);
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
     return;
+  }
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    el.remove();
+  }
+}
+
+async function saveReceiptImageWeb(invoice) {
+  const dataUrl = buildReceiptDataUrl(invoice);
+  const text = buildReceiptText(invoice);
+  const filename = pngFilenameFor(invoice);
+
+  if (isInAppWebView()) {
+    const saved = await tryNativeAppSave(dataUrl, invoice);
+    if (saved) return { action: 'saved' };
+    return { action: 'preview', dataUrl, text };
+  }
+
+  const blob = await buildReceiptPngBlob(invoice);
+
+  try {
+    await shareBlobWeb(blob, filename, 'Parking Receipt');
+    return { action: 'shared' };
   } catch (err) {
-    if (err?.name === 'AbortError') return;
+    if (err?.name === 'AbortError') return { action: 'cancelled' };
   }
 
   try {
     await downloadBlobWeb(blob, filename);
-    return;
+    return { action: 'saved' };
   } catch {
-    /* fall through */
+    return { action: 'preview', dataUrl, text };
   }
-
-  showReceiptImagePreview(blob);
 }
 
 async function downloadReceiptHtmlWeb(html, invoice) {
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   await downloadBlobWeb(blob, htmlFilenameFor(invoice));
+  return { action: 'saved' };
 }
 
 async function sharePdfOnNative(html) {
@@ -267,26 +334,27 @@ async function sharePdfOnNative(html) {
       dialogTitle: 'Save or share receipt',
       UTI: 'com.adobe.pdf',
     });
-    return;
+    return { action: 'shared' };
   }
   await Print.printAsync({ html });
+  return { action: 'shared' };
 }
 
 export function receiptActionLabel() {
   return 'Download';
 }
 
+/** @returns {{ action: 'saved'|'shared'|'preview'|'cancelled' }} */
 export async function downloadReceipt(invoice) {
   const html = buildReceiptHtml(invoice);
 
   if (Platform.OS === 'web') {
     if (isMobileWeb()) {
-      await saveReceiptImageWeb(invoice);
-      return;
+      return saveReceiptImageWeb(invoice);
     }
     await downloadReceiptHtmlWeb(html, invoice);
-    return;
+    return { action: 'saved' };
   }
 
-  await sharePdfOnNative(html);
+  return sharePdfOnNative(html);
 }

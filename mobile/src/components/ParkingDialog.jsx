@@ -1,10 +1,10 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet, Pressable, Platform, ActivityIndicator, Image, TextInput,
+  Modal, View, Text, TouchableOpacity, StyleSheet, Pressable, Platform, ActivityIndicator, Image, TextInput, ScrollView,
 } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { playSuccessSound } from '../lib/sound';
 import { resolveAssetUrl, formatETB, formatDuration } from '../lib/api';
-import { receiptActionLabel } from '../lib/receipt';
+import { receiptActionLabel, copyReceiptText } from '../lib/receipt';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
@@ -305,6 +305,57 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
   );
 }
 
+export function ReceiptPreviewModal({ visible, dataUrl, invoice, onClose }) {
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!invoice || copying) return;
+    setCopying(true);
+    try {
+      await copyReceiptText(invoice);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  if (!dataUrl) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.previewOverlay}>
+        <View style={styles.previewCard}>
+          <Text style={styles.previewTitle}>Receipt</Text>
+          <Text style={styles.previewHint}>
+            Touch and hold the image to save, or copy the receipt text below.
+          </Text>
+          <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewScrollContent}>
+            <Image source={{ uri: dataUrl }} style={styles.previewImage} resizeMode="contain" />
+          </ScrollView>
+          <TouchableOpacity
+            style={[styles.primaryBtn, styles.previewCopyBtn, copying && styles.btnDisabled]}
+            onPress={handleCopy}
+            disabled={copying}
+          >
+            {copying ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>{copied ? 'Copied!' : 'Copy receipt text'}</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ghostBtn} onPress={onClose}>
+            <Text style={styles.ghostBtnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export function CheckInSuccessDialog(props) {
   return (
     <CheckInBottomSheet
@@ -540,4 +591,28 @@ const styles = StyleSheet.create({
   receiptBold: { fontWeight: '800' },
   receiptMono: { fontFamily: mono, letterSpacing: 1 },
   receiptPay: { flexDirection: 'row', alignItems: 'center' },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  previewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: '92%',
+    ...dialogShadow,
+  },
+  previewTitle: { fontSize: 22, fontWeight: '800', color: '#111', textAlign: 'center', marginBottom: 8 },
+  previewHint: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 16, lineHeight: 20 },
+  previewScroll: { maxHeight: 360, marginBottom: 12 },
+  previewScrollContent: { alignItems: 'center' },
+  previewImage: {
+    width: '100%',
+    height: 340,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+  },
+  previewCopyBtn: { marginBottom: 4 },
 });

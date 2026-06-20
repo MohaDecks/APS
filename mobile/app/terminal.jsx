@@ -12,6 +12,7 @@ import {
   ConfirmCheckOutDialog,
   CheckInBottomSheet,
   CheckOutSuccessDialog,
+  ReceiptPreviewModal,
   ErrorDialog,
 } from '../src/components/ParkingDialog';
 import { downloadReceipt } from '../src/lib/receipt';
@@ -34,6 +35,7 @@ export default function Terminal() {
   const [completedInvoice, setCompletedInvoice] = useState(null);
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -177,7 +179,13 @@ export default function Terminal() {
     if (!completedInvoice || downloadingReceipt) return;
     setDownloadingReceipt(true);
     try {
-      await downloadReceipt(completedInvoice);
+      const result = await downloadReceipt(completedInvoice);
+      if (result?.action === 'preview') {
+        setReceiptPreview({
+          dataUrl: result.dataUrl,
+          invoice: completedInvoice,
+        });
+      }
     } catch {
       setErrorMsg('Download failed');
       setShowError(true);
@@ -348,6 +356,12 @@ export default function Terminal() {
         onDownload={handleDownloadReceipt}
         onDone={handleCheckoutDone}
         downloading={downloadingReceipt}
+      />
+      <ReceiptPreviewModal
+        visible={!!receiptPreview}
+        dataUrl={receiptPreview?.dataUrl}
+        invoice={receiptPreview?.invoice}
+        onClose={() => setReceiptPreview(null)}
       />
       <ErrorDialog visible={showError} message={errorMsg} onClose={() => setShowError(false)} />
     </SafeAreaView>
