@@ -3,7 +3,7 @@ import {
 } from 'react-native';
 import { useEffect } from 'react';
 import { playSuccessSound } from '../lib/sound';
-import { resolveAssetUrl } from '../lib/api';
+import { resolveAssetUrl, formatETB, formatDuration } from '../lib/api';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
@@ -86,36 +86,63 @@ function PaymentLogo({ logoUrl, icon, size = 40, textStyle }) {
   return <Text style={textStyle}>{icon || '💳'}</Text>;
 }
 
-export function ConfirmCheckInDialog({ visible, plate, onConfirm, onCancel, loading }) {
+export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, onCancel, onDone }) {
+  const isSuccess = phase === 'success';
+
+  useEffect(() => {
+    if (visible && isSuccess) playSuccessSound();
+  }, [visible, isSuccess]);
+
+  if (!plate) return null;
+
   return (
-    <SlideUpDialog visible={visible} onRequestClose={onCancel}>
-      <View style={[styles.iconRing, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}>
-        <Text style={styles.iconBig}>🚗</Text>
+    <SlideUpDialog
+      visible={visible}
+      variant="sheet"
+      dismissOnBackdrop={!loading}
+      onRequestClose={isSuccess ? onDone : loading ? undefined : onCancel}
+    >
+      <View style={[styles.iconRing, { backgroundColor: isSuccess ? '#dcfce7' : '#f0fdf4', borderColor: isSuccess ? '#86efac' : '#bbf7d0' }]}>
+        <Text style={styles.iconBig}>{isSuccess ? '✓' : '🚗'}</Text>
       </View>
-      <Text style={styles.dialogTitle}>Confirm Check In</Text>
-      <Text style={styles.dialogSub}>This vehicle will be registered on premises</Text>
+      <Text style={styles.dialogTitle}>{isSuccess ? 'Checked In!' : 'Confirm Check In'}</Text>
+      <Text style={styles.dialogSub}>
+        {isSuccess ? 'Vehicle is now on premises' : 'This vehicle will be registered on premises'}
+      </Text>
 
       <View style={styles.plateCard}>
-        <Text style={styles.plateLabel}>PLATE NUMBER</Text>
+        <Text style={styles.plateLabel}>PLATE</Text>
         <Text style={styles.plateText}>{plate}</Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.primaryBtn, loading && styles.btnDisabled]}
-        onPress={onConfirm}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.primaryBtnText}>✓ Confirm Check In</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>
-        <Text style={styles.ghostBtnText}>Cancel</Text>
-      </TouchableOpacity>
+      {isSuccess ? (
+        <TouchableOpacity style={styles.primaryBtn} onPress={onDone}>
+          <Text style={styles.primaryBtnText}>Done</Text>
+        </TouchableOpacity>
+      ) : (
+        <>
+          <TouchableOpacity
+            style={[styles.primaryBtn, loading && styles.btnDisabled]}
+            onPress={onConfirm}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>✓ Confirm Check In</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>
+            <Text style={styles.ghostBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </SlideUpDialog>
   );
+}
+
+export function ConfirmCheckInDialog(props) {
+  return <CheckInBottomSheet {...props} phase="confirm" onDone={props.onCancel} />;
 }
 
 export function ConfirmCheckOutDialog({
@@ -217,7 +244,7 @@ export function ConfirmCheckOutDialog({
   );
 }
 
-export function CheckOutSuccessDialog({ visible, invoice, onPrint, onDone }) {
+export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, downloading }) {
   useEffect(() => {
     if (visible) playSuccessSound();
   }, [visible]);
@@ -232,32 +259,43 @@ export function CheckOutSuccessDialog({ visible, invoice, onPrint, onDone }) {
       <Text style={styles.dialogTitle}>Payment Received!</Text>
       <Text style={styles.dialogSub}>Check-out completed successfully</Text>
 
-      <View style={styles.plateCard}>
-        <Text style={styles.plateLabel}>PLATE</Text>
-        <Text style={styles.plateText}>{invoice.plate}</Text>
-      </View>
-
-      {invoice.payment_method_name && (
-        <View style={styles.paidWith}>
-          <Text style={styles.paidLabel}>Paid with</Text>
-          <View style={styles.paidBadge}>
-            <PaymentLogo
-              logoUrl={invoice.payment_method_logo_url}
-              icon={invoice.payment_method_icon}
-              size={32}
-              textStyle={styles.paidIcon}
-            />
+      <View style={styles.receiptBox}>
+        <ReceiptRow label="Invoice" value={invoice.invoice_number} />
+        <ReceiptRow label="Plate" value={invoice.plate} bold mono />
+        <ReceiptRow label="Entry" value={invoice.entry_time?.replace('T', ' ').slice(0, 19)} />
+        <ReceiptRow label="Exit" value={invoice.exit_time?.replace('T', ' ').slice(0, 19)} />
+        <ReceiptRow label="Duration" value={formatDuration(invoice.duration_minutes)} />
+        <ReceiptRow label="Rate" value={`${formatETB(invoice.hourly_rate)}/hr`} />
+        {invoice.payment_method_name && (
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptLabel}>Payment</Text>
+            <View style={styles.receiptPay}>
+              <PaymentLogo
+                logoUrl={invoice.payment_method_logo_url}
+                icon={invoice.payment_method_icon}
+                size={28}
+                textStyle={styles.paidIcon}
+              />
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
 
       <View style={styles.successFeeBox}>
         <Text style={styles.successFeeLabel}>Total paid</Text>
-        <Text style={styles.successFeeValue}>{invoice.total_fee != null ? `ETB ${Number(invoice.total_fee).toFixed(2)}` : '—'}</Text>
+        <Text style={styles.successFeeValue}>{invoice.total_fee != null ? formatETB(invoice.total_fee) : '—'}</Text>
       </View>
 
-      <TouchableOpacity style={[styles.primaryBtn, styles.payBtn]} onPress={onPrint}>
-        <Text style={styles.primaryBtnText}>Print Receipt</Text>
+      <TouchableOpacity
+        style={[styles.primaryBtn, styles.payBtn, downloading && styles.btnDisabled]}
+        onPress={onDownload}
+        disabled={downloading}
+      >
+        {downloading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.primaryBtnText}>Download Receipt</Text>
+        )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.ghostBtn} onPress={onDone}>
         <Text style={styles.ghostBtnText}>Done</Text>
@@ -266,28 +304,23 @@ export function CheckOutSuccessDialog({ visible, invoice, onPrint, onDone }) {
   );
 }
 
-export function CheckInSuccessDialog({ visible, plate, onClose }) {
+export function CheckInSuccessDialog(props) {
   return (
-    <SlideUpDialog visible={visible} dismissOnBackdrop={false}>
-      <View style={[styles.iconRing, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
-        <Text style={[styles.iconBig, { fontSize: 36 }]}>✓</Text>
-      </View>
-      <Text style={styles.dialogTitle}>Checked In!</Text>
-      <Text style={styles.dialogSub}>Vehicle is now on premises</Text>
-      <View style={styles.plateCard}>
-        <Text style={styles.plateLabel}>PLATE</Text>
-        <Text style={styles.plateText}>{plate}</Text>
-      </View>
-      <TouchableOpacity style={styles.primaryBtn} onPress={onClose}>
-        <Text style={styles.primaryBtnText}>Done</Text>
-      </TouchableOpacity>
-    </SlideUpDialog>
+    <CheckInBottomSheet
+      visible={props.visible}
+      plate={props.plate}
+      phase="success"
+      loading={false}
+      onConfirm={() => {}}
+      onCancel={props.onClose}
+      onDone={props.onClose}
+    />
   );
 }
 
 export function ErrorDialog({ visible, message, onClose }) {
   return (
-    <SlideUpDialog visible={visible} onRequestClose={onClose}>
+    <SlideUpDialog visible={visible} variant="sheet" onRequestClose={onClose}>
       <View style={[styles.iconRing, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
         <Text style={[styles.iconBig, { color: '#ef4444' }]}>✕</Text>
       </View>
@@ -305,6 +338,15 @@ function InfoPill({ label, value, accent }) {
     <View style={styles.pill}>
       <Text style={styles.pillLabel}>{label}</Text>
       <Text style={[styles.pillValue, accent && { color: '#16a34a' }]}>{value}</Text>
+    </View>
+  );
+}
+
+function ReceiptRow({ label, value, bold, mono }) {
+  return (
+    <View style={styles.receiptRow}>
+      <Text style={styles.receiptLabel}>{label}</Text>
+      <Text style={[styles.receiptValue, bold && styles.receiptBold, mono && styles.receiptMono]}>{value}</Text>
     </View>
   );
 }
@@ -476,4 +518,25 @@ const styles = StyleSheet.create({
   },
   successFeeLabel: { fontSize: 13, color: '#888', fontWeight: '600' },
   successFeeValue: { fontSize: 26, fontWeight: '800', color: '#16a34a' },
+  receiptBox: {
+    width: '100%',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+    ...cardShadow,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  receiptLabel: { fontSize: 14, color: '#888', fontWeight: '500' },
+  receiptValue: { fontSize: 14, color: '#222', fontWeight: '600', maxWidth: '58%', textAlign: 'right' },
+  receiptBold: { fontWeight: '800' },
+  receiptMono: { fontFamily: mono, letterSpacing: 1 },
+  receiptPay: { flexDirection: 'row', alignItems: 'center' },
 });

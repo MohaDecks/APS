@@ -9,12 +9,12 @@ import api, { formatETB, clearAuth, getUser } from '../src/lib/api';
 import { theme } from '../src/lib/theme';
 import SwipeButton from '../src/components/SwipeButton';
 import {
-  ConfirmCheckInDialog,
   ConfirmCheckOutDialog,
-  CheckInSuccessDialog,
+  CheckInBottomSheet,
   CheckOutSuccessDialog,
   ErrorDialog,
 } from '../src/components/ParkingDialog';
+import { downloadReceipt } from '../src/lib/receipt';
 
 export default function Terminal() {
   const [stats, setStats] = useState(null);
@@ -26,17 +26,17 @@ export default function Terminal() {
   const [swipeKey, setSwipeKey] = useState(0);
   const [checkoutSwipeKey, setCheckoutSwipeKey] = useState(0);
 
-  const [pendingCheckIn, setPendingCheckIn] = useState(null);
+  const [checkInSheet, setCheckInSheet] = useState(null);
+
   const [pendingCheckOut, setPendingCheckOut] = useState(null);
   const [checkoutTarget, setCheckoutTarget] = useState(null);
 
-  const [successPlate, setSuccessPlate] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [completedInvoice, setCompletedInvoice] = useState(null);
+  const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [completedInvoice, setCompletedInvoice] = useState(null);
-  const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showError, setShowError] = useState(false);
 
@@ -75,22 +75,20 @@ export default function Terminal() {
 
   const onCheckInSwipe = () => {
     if (!plate.trim()) return;
-    setPendingCheckIn(plate.trim().toUpperCase());
+    setCheckInSheet({ plate: plate.trim().toUpperCase(), phase: 'confirm' });
   };
 
   const confirmCheckIn = async () => {
-    if (!pendingCheckIn || loading) return;
+    if (!checkInSheet || checkInSheet.phase !== 'confirm' || loading) return;
     setLoading(true);
     try {
-      await api.post('/parking/check-in', { plate: pendingCheckIn });
-      setPendingCheckIn(null);
+      await api.post('/parking/check-in', { plate: checkInSheet.plate });
       setPlate('');
       resetCheckInSwipe();
-      setSuccessPlate(pendingCheckIn);
-      setShowSuccess(true);
+      setCheckInSheet({ plate: checkInSheet.plate, phase: 'success' });
       fetchData();
     } catch (err) {
-      setPendingCheckIn(null);
+      setCheckInSheet(null);
       resetCheckInSwipe();
       setErrorMsg(err.response?.data?.error || 'Check-in failed');
       setShowError(true);
@@ -100,8 +98,12 @@ export default function Terminal() {
   };
 
   const cancelCheckIn = () => {
-    setPendingCheckIn(null);
+    setCheckInSheet(null);
     resetCheckInSwipe();
+  };
+
+  const doneCheckIn = () => {
+    setCheckInSheet(null);
   };
 
   const selectForCheckout = (session) => {
@@ -171,10 +173,17 @@ export default function Terminal() {
     setPaymentPhone('');
   };
 
-  const handlePrintReceipt = () => {
-    if (!completedInvoice) return;
-    setShowCheckoutSuccess(false);
-    router.push({ pathname: '/invoice', params: { data: JSON.stringify(completedInvoice) } });
+  const handleDownloadReceipt = async () => {
+    if (!completedInvoice || downloadingReceipt) return;
+    setDownloadingReceipt(true);
+    try {
+      await downloadReceipt(completedInvoice);
+    } catch {
+      setErrorMsg('Download failed');
+      setShowError(true);
+    } finally {
+      setDownloadingReceipt(false);
+    }
   };
 
   const handleCheckoutDone = () => {
@@ -226,11 +235,12 @@ export default function Terminal() {
               style={styles.checkInPlateInput}
               value={plate}
               onChangeText={setPlate}
-              placeholder="Plate number"
+              placeholder="AA 12345"
               placeholderTextColor={theme.label}
               autoCapitalize="characters"
               autoCorrect={false}
               returnKeyType="done"
+              textAlign="center"
               {...webInput}
             />
           </View>
@@ -240,7 +250,7 @@ export default function Terminal() {
               hint="Slide right to confirm"
               color={theme.dark}
               onComplete={onCheckInSwipe}
-              disabled={!plate.trim() || !!pendingCheckIn}
+              disabled={!plate.trim() || !!checkInSheet}
               resetKey={`${swipeKey}-${plate}`}
             />
           </View>
@@ -311,7 +321,15 @@ export default function Terminal() {
         </SafeAreaView>
       )}
 
-      <ConfirmCheckInDialog visible={!!pendingCheckIn} plate={pendingCheckIn} onConfirm={confirmCheckIn} onCancel={cancelCheckIn} loading={loading} />
+      <CheckInBottomSheet
+        visible={!!checkInSheet}
+        plate={checkInSheet?.plate}
+        phase={checkInSheet?.phase || 'confirm'}
+        loading={loading}
+        onConfirm={confirmCheckIn}
+        onCancel={cancelCheckIn}
+        onDone={doneCheckIn}
+      />
       <ConfirmCheckOutDialog
         visible={!!pendingCheckOut}
         session={pendingCheckOut}
@@ -327,10 +345,10 @@ export default function Terminal() {
       <CheckOutSuccessDialog
         visible={showCheckoutSuccess}
         invoice={completedInvoice}
-        onPrint={handlePrintReceipt}
+        onDownload={handleDownloadReceipt}
         onDone={handleCheckoutDone}
+        downloading={downloadingReceipt}
       />
-      <CheckInSuccessDialog visible={showSuccess} plate={successPlate} onClose={() => setShowSuccess(false)} />
       <ErrorDialog visible={showError} message={errorMsg} onClose={() => setShowError(false)} />
     </SafeAreaView>
   );
@@ -398,19 +416,21 @@ const styles = StyleSheet.create({
     marginBottom: theme.space.lg,
   },
   checkInRow: {
-    paddingVertical: 14,
+    paddingVertical: 24,
     paddingHorizontal: theme.space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.separator,
+    alignItems: 'center',
   },
   checkInPlateInput: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: theme.dark,
     fontFamily: theme.mono,
-    letterSpacing: 1,
-    padding: 0,
-    margin: 0,
+    letterSpacing: 4,
+    paddingVertical: 8,
+    textAlign: 'center',
+    width: '100%',
     ...webInput,
   },
   checkInSwipe: {
