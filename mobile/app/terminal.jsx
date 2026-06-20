@@ -44,7 +44,6 @@ export default function Terminal() {
 
   const [completedInvoice, setCompletedInvoice] = useState(null);
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
-  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [receiptBlob, setReceiptBlob] = useState(null);
   const [receiptDataUrl, setReceiptDataUrl] = useState(null);
   const [receiptReady, setReceiptReady] = useState(false);
@@ -233,45 +232,32 @@ export default function Terminal() {
   const handleDownloadReceipt = () => {
     if (!completedInvoice) return;
 
-    const filename = getReceiptFilename(completedInvoice);
+    const invoice = completedInvoice;
+    const filename = getReceiptFilename(invoice);
+    const blob = receiptBlob;
+    const dataUrl = receiptDataUrl;
     const inEmbed = Platform.OS === 'web'
       && (isInAppWebView() || (typeof window !== 'undefined' && typeof window.DirshayApp?.postMessage === 'function'));
 
-    if (Platform.OS === 'web' && inEmbed && (receiptBlob || receiptDataUrl)) {
-      setDownloadingReceipt(true);
-      downloadReceiptBlob(receiptBlob, completedInvoice, receiptDataUrl)
-        .catch(() => {
-          setErrorMsg('Could not save invoice. Allow Photos access for Dirsha in phone Settings.');
-          setShowError(true);
-        })
-        .finally(() => setDownloadingReceipt(false));
+    handleCheckoutDone();
+
+    if (Platform.OS === 'web' && inEmbed && (blob || dataUrl)) {
+      downloadReceiptBlob(blob, invoice, dataUrl).catch(() => {});
       return;
     }
-
-    const finish = () => handleCheckoutDone();
 
     if (Platform.OS === 'web') {
-      if (receiptBlob) {
-        triggerBlobDownloadSync(receiptBlob, filename);
-        finish();
+      if (blob) {
+        triggerBlobDownloadSync(blob, filename);
         return;
       }
-
-      if (receiptDataUrl) {
-        triggerReceiptDownloadSync(receiptDataUrl, filename);
-        finish();
-        return;
+      if (dataUrl) {
+        triggerReceiptDownloadSync(dataUrl, filename);
       }
-
       return;
     }
 
-    setDownloadingReceipt(true);
-    downloadReceipt(completedInvoice)
-      .then((result) => {
-        if (result?.action === 'saved') finish();
-      })
-      .finally(() => setDownloadingReceipt(false));
+    downloadReceipt(invoice).catch(() => {});
   };
 
   const handleLogout = async () => {
@@ -441,7 +427,6 @@ export default function Terminal() {
         invoice={completedInvoice}
         onDownload={handleDownloadReceipt}
         onDone={handleCheckoutDone}
-        downloading={downloadingReceipt}
         receiptReady={receiptReady}
         receiptPreparing={!receiptReady && !!completedInvoice}
       />
