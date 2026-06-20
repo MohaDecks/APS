@@ -3,8 +3,11 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { playSuccessSound } from '../lib/sound';
-import { resolveAssetUrl, formatETB, formatDuration } from '../lib/api';
-import { receiptActionLabel, copyReceiptText } from '../lib/receipt';
+import { resolveAssetUrl } from '../lib/api';
+import { receiptActionLabel, copyReceiptText, saveReceiptPngFile } from '../lib/receipt';
+import { BRAND_RED, BRAND_RED_LIGHT, CHECKOUT_BTN } from '../lib/brand';
+import { useBranding } from '../hooks/useBranding';
+import ReceiptTicket from './ReceiptTicket';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
@@ -87,6 +90,45 @@ function PaymentLogo({ logoUrl, icon, size = 40, textStyle }) {
   return <Text style={textStyle}>{icon || '💳'}</Text>;
 }
 
+function DialogBrandMark({ success, error }) {
+  const branding = useBranding();
+
+  if (success) {
+    return (
+      <View style={[styles.brandMarkRing, styles.brandMarkRingSuccess]}>
+        <Text style={styles.brandMarkCheck}>✓</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.brandMarkRing, styles.brandMarkRingError]}>
+        <Text style={styles.brandMarkCheck}>✕</Text>
+      </View>
+    );
+  }
+
+  if (branding.logoUrl) {
+    return (
+      <View style={styles.brandMarkRing}>
+        <Image
+          source={{ uri: branding.logoUrl }}
+          style={styles.brandMarkLogo}
+          resizeMode="contain"
+          accessibilityLabel={branding.facilityName}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.brandMarkRing}>
+      <Text style={styles.brandMarkLetter}>D</Text>
+    </View>
+  );
+}
+
 export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, onCancel, onDone }) {
   const isSuccess = phase === 'success';
 
@@ -103,9 +145,7 @@ export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, 
       dismissOnBackdrop={!loading}
       onRequestClose={isSuccess ? onDone : loading ? undefined : onCancel}
     >
-      <View style={[styles.iconRing, { backgroundColor: isSuccess ? '#dcfce7' : '#f0fdf4', borderColor: isSuccess ? '#86efac' : '#bbf7d0' }]}>
-        <Text style={styles.iconBig}>{isSuccess ? '✓' : '🚗'}</Text>
-      </View>
+      <DialogBrandMark success={isSuccess} />
       <Text style={styles.dialogTitle}>{isSuccess ? 'Checked In!' : 'Confirm Check In'}</Text>
       <Text style={styles.dialogSub}>
         {isSuccess ? 'Vehicle is now on premises' : 'This vehicle will be registered on premises'}
@@ -117,20 +157,20 @@ export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, 
       </View>
 
       {isSuccess ? (
-        <TouchableOpacity style={styles.primaryBtn} onPress={onDone}>
+        <TouchableOpacity style={[styles.primaryBtn, styles.brandBtn]} onPress={onDone}>
           <Text style={styles.primaryBtnText}>Done</Text>
         </TouchableOpacity>
       ) : (
         <>
           <TouchableOpacity
-            style={[styles.primaryBtn, loading && styles.btnDisabled]}
+            style={[styles.primaryBtn, styles.brandBtn, loading && styles.btnDisabled]}
             onPress={onConfirm}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryBtnText}>✓ Confirm Check In</Text>
+              <Text style={styles.primaryBtnText}>Confirm Check In</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>
@@ -165,9 +205,7 @@ export function ConfirmCheckOutDialog({
 
   return (
     <SlideUpDialog visible={visible} onRequestClose={loading ? undefined : onCancel} variant="sheet">
-      <View style={[styles.iconRing, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
-        <Text style={styles.iconBig}>🚗</Text>
-      </View>
+      <DialogBrandMark />
       <Text style={styles.dialogTitle}>Confirm Check Out</Text>
       <Text style={styles.dialogSub}>Vehicle is leaving the premises</Text>
 
@@ -228,7 +266,7 @@ export function ConfirmCheckOutDialog({
       )}
 
       <TouchableOpacity
-        style={[styles.primaryBtn, styles.dangerBtn, !canConfirm && styles.btnDisabled]}
+        style={[styles.primaryBtn, styles.checkoutBtn, !canConfirm && styles.btnDisabled]}
         onPress={onConfirm}
         disabled={!canConfirm}
       >
@@ -254,38 +292,13 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
 
   return (
     <SlideUpDialog visible={visible} variant="sheet" dismissOnBackdrop={false}>
-      <View style={[styles.iconRing, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
-        <Text style={[styles.iconBig, { fontSize: 36 }]}>✓</Text>
-      </View>
-      <Text style={styles.dialogTitle}>Payment Received!</Text>
-      <Text style={styles.dialogSub}>Check-out completed successfully</Text>
-
-      <View style={styles.receiptBox}>
-        <ReceiptRow label="Invoice" value={invoice.invoice_number} />
-        <ReceiptRow label="Plate" value={invoice.plate} bold mono />
-        <ReceiptRow label="Entry" value={invoice.entry_time?.replace('T', ' ').slice(0, 19)} />
-        <ReceiptRow label="Exit" value={invoice.exit_time?.replace('T', ' ').slice(0, 19)} />
-        <ReceiptRow label="Duration" value={formatDuration(invoice.duration_minutes)} />
-        <ReceiptRow label="Rate" value={`${formatETB(invoice.hourly_rate)}/hr`} />
-        {invoice.payment_method_name && (
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Payment</Text>
-            <View style={styles.receiptPay}>
-              <PaymentLogo
-                logoUrl={invoice.payment_method_logo_url}
-                icon={invoice.payment_method_icon}
-                size={28}
-                textStyle={styles.paidIcon}
-              />
-            </View>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.successFeeBox}>
-        <Text style={styles.successFeeLabel}>Total paid</Text>
-        <Text style={styles.successFeeValue}>{invoice.total_fee != null ? formatETB(invoice.total_fee) : '—'}</Text>
-      </View>
+      <ScrollView
+        style={styles.checkoutScroll}
+        contentContainerStyle={styles.checkoutScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <ReceiptTicket invoice={invoice} />
+      </ScrollView>
 
       <TouchableOpacity
         style={[styles.primaryBtn, styles.payBtn, downloading && styles.btnDisabled]}
@@ -308,6 +321,22 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
 export function ReceiptPreviewModal({ visible, dataUrl, invoice, onClose }) {
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSavePng = async () => {
+    if (!invoice || saving) return;
+    setSaving(true);
+    try {
+      await saveReceiptPngFile(invoice);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleCopy = async () => {
     if (!invoice || copying) return;
@@ -323,30 +352,47 @@ export function ReceiptPreviewModal({ visible, dataUrl, invoice, onClose }) {
     }
   };
 
-  if (!dataUrl) return null;
+  if (!invoice && !dataUrl) return null;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.previewOverlay}>
         <View style={styles.previewCard}>
-          <Text style={styles.previewTitle}>Receipt</Text>
-          <Text style={styles.previewHint}>
-            Touch and hold the image to save, or copy the receipt text below.
-          </Text>
           <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewScrollContent}>
-            <Image source={{ uri: dataUrl }} style={styles.previewImage} resizeMode="contain" />
+            {dataUrl ? (
+              <Image source={{ uri: dataUrl }} style={styles.previewImage} resizeMode="contain" />
+            ) : invoice ? (
+              <ReceiptTicket invoice={invoice} />
+            ) : null}
           </ScrollView>
-          <TouchableOpacity
-            style={[styles.primaryBtn, styles.previewCopyBtn, copying && styles.btnDisabled]}
-            onPress={handleCopy}
-            disabled={copying}
-          >
-            {copying ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryBtnText}>{copied ? 'Copied!' : 'Copy receipt text'}</Text>
-            )}
-          </TouchableOpacity>
+          {invoice && (
+            <>
+              <TouchableOpacity
+                style={[styles.primaryBtn, styles.payBtn, styles.previewCopyBtn, saving && styles.btnDisabled]}
+                onPress={handleSavePng}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryBtnText}>
+                    {saved ? 'Saved!' : receiptActionLabel()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryBtn, styles.previewCopyBtn, copying && styles.btnDisabled, { backgroundColor: '#333' }]}
+                onPress={handleCopy}
+                disabled={copying}
+              >
+                {copying ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryBtnText}>{copied ? 'Copied!' : 'Copy receipt text'}</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity style={styles.ghostBtn} onPress={onClose}>
             <Text style={styles.ghostBtnText}>Close</Text>
           </TouchableOpacity>
@@ -373,9 +419,7 @@ export function CheckInSuccessDialog(props) {
 export function ErrorDialog({ visible, message, onClose }) {
   return (
     <SlideUpDialog visible={visible} variant="sheet" onRequestClose={onClose}>
-      <View style={[styles.iconRing, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
-        <Text style={[styles.iconBig, { color: '#ef4444' }]}>✕</Text>
-      </View>
+      <DialogBrandMark error />
       <Text style={styles.dialogTitle}>Something went wrong</Text>
       <Text style={styles.dialogSub}>{message}</Text>
       <TouchableOpacity style={[styles.primaryBtn, styles.dangerBtn]} onPress={onClose}>
@@ -388,17 +432,8 @@ export function ErrorDialog({ visible, message, onClose }) {
 function InfoPill({ label, value, accent }) {
   return (
     <View style={styles.pill}>
-      <Text style={styles.pillLabel}>{label}</Text>
-      <Text style={[styles.pillValue, accent && { color: '#16a34a' }]}>{value}</Text>
-    </View>
-  );
-}
-
-function ReceiptRow({ label, value, bold, mono }) {
-  return (
-    <View style={styles.receiptRow}>
-      <Text style={styles.receiptLabel}>{label}</Text>
-      <Text style={[styles.receiptValue, bold && styles.receiptBold, mono && styles.receiptMono]}>{value}</Text>
+      <Text style={styles.pillLabel}>{label.toUpperCase()}</Text>
+      <Text style={[styles.pillValue, accent && styles.pillValueAccent]}>{value}</Text>
     </View>
   );
 }
@@ -433,8 +468,8 @@ const styles = StyleSheet.create({
   },
   dialogSheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingTop: 8,
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
@@ -446,79 +481,111 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#D1D1D6',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   dialogWide: { maxWidth: 540 },
   iconRing: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 2,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  iconBig: { fontSize: 40 },
-  dialogTitle: { fontSize: 26, fontWeight: '800', color: '#111', letterSpacing: -0.3 },
-  dialogSub: { fontSize: 16, color: '#888', marginTop: 8, marginBottom: 24, textAlign: 'center' },
-  plateCard: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 18,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
-    width: '100%',
+  iconRingError: { backgroundColor: BRAND_RED_LIGHT, borderWidth: 0 },
+  brandMarkRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: BRAND_RED_LIGHT,
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#eee',
-    ...cardShadow,
+    overflow: 'hidden',
   },
-  plateLabel: { fontSize: 11, color: '#aaa', letterSpacing: 2, fontWeight: '700' },
-  plateText: { fontSize: 40, fontWeight: '900', letterSpacing: 3, marginTop: 14, fontFamily: mono },
-  infoRow: { flexDirection: 'row', gap: 12, width: '100%', marginBottom: 22 },
-  pill: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#eee',
-    ...cardShadow,
+  brandMarkRingSuccess: {
+    backgroundColor: BRAND_RED_LIGHT,
   },
-  pillLabel: { fontSize: 11, color: '#aaa', fontWeight: '600', textTransform: 'uppercase' },
-  pillValue: { fontSize: 19, fontWeight: '700', marginTop: 6, color: '#222' },
-  primaryBtn: {
-    backgroundColor: '#000',
-    borderRadius: 18,
-    paddingVertical: 20,
+  brandMarkRingError: {
+    backgroundColor: BRAND_RED_LIGHT,
+  },
+  brandMarkLogo: {
+    width: 84,
+    height: 84,
+  },
+  brandMarkLetter: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: BRAND_RED,
+  },
+  brandMarkCheck: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: BRAND_RED,
+  },
+  iconBig: { fontSize: 32 },
+  dialogTitle: { fontSize: 24, fontWeight: '800', color: '#111', letterSpacing: -0.4 },
+  dialogSub: { fontSize: 15, color: '#8e8e93', marginTop: 6, marginBottom: 22, textAlign: 'center' },
+  plateCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 14,
+    borderWidth: 0,
     ...cardShadow,
   },
-  dangerBtn: { backgroundColor: '#f87171' },
-  btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  ghostBtn: { paddingVertical: 12, width: '100%', alignItems: 'center' },
-  ghostBtnText: { color: '#888', fontSize: 15, fontWeight: '500' },
-  payTitle: { fontSize: 13, fontWeight: '700', color: '#666', textTransform: 'uppercase', letterSpacing: 1, alignSelf: 'flex-start', marginBottom: 12 },
+  plateLabel: { fontSize: 11, color: '#aeaeb2', letterSpacing: 2, fontWeight: '600' },
+  plateText: { fontSize: 38, fontWeight: '900', letterSpacing: 4, marginTop: 12, fontFamily: mono, color: '#111' },
+  infoRow: { flexDirection: 'row', gap: 12, width: '100%', marginBottom: 20 },
+  pill: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderWidth: 0,
+    ...cardShadow,
+  },
+  pillLabel: { fontSize: 11, color: '#aeaeb2', fontWeight: '600', letterSpacing: 1 },
+  pillValue: { fontSize: 18, fontWeight: '700', marginTop: 8, color: '#111' },
+  pillValueAccent: { color: BRAND_RED },
+  primaryBtn: {
+    backgroundColor: CHECKOUT_BTN,
+    borderRadius: 999,
+    paddingVertical: 18,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 4,
+    marginTop: 4,
+  },
+  brandBtn: { backgroundColor: BRAND_RED, borderRadius: 18 },
+  checkoutBtn: { backgroundColor: CHECKOUT_BTN },
+  dangerBtn: { backgroundColor: BRAND_RED },
+  btnDisabled: { opacity: 0.45 },
+  primaryBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  ghostBtn: { paddingVertical: 14, width: '100%', alignItems: 'center' },
+  ghostBtnText: { color: '#8e8e93', fontSize: 16, fontWeight: '500' },
+  payTitle: { fontSize: 11, fontWeight: '600', color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 1.2, alignSelf: 'flex-start', marginBottom: 10 },
   payEmpty: { fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 16, width: '100%' },
-  payRow: { flexDirection: 'row', gap: 10, width: '100%', marginBottom: 16 },
+  payRow: { flexDirection: 'row', gap: 10, width: '100%', marginBottom: 18 },
   payCard: {
     flex: 1,
-    height: 92,
-    borderRadius: 18,
+    height: 88,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#eee',
+    borderColor: '#f2f2f7',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
     ...cardShadow,
   },
-  payCardSelected: { borderColor: '#f87171', backgroundColor: '#fff5f5' },
+  payCardSelected: { borderColor: BRAND_RED, backgroundColor: BRAND_RED_LIGHT },
   payIconText: { fontSize: 18, fontWeight: '800' },
   phoneField: { width: '100%', marginBottom: 16 },
   phoneLabel: { fontSize: 12, fontWeight: '700', color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
@@ -550,10 +617,12 @@ const styles = StyleSheet.create({
     fontFamily: mono,
     ...webInput,
   },
-  payBtn: { backgroundColor: '#007AFF' },
+  payBtn: { backgroundColor: BRAND_RED },
+  checkoutScroll: { maxHeight: 440, width: '100%', marginBottom: 12 },
+  checkoutScrollContent: { paddingBottom: 4 },
   paidWith: { width: '100%', alignItems: 'center', marginBottom: 12 },
   paidLabel: { fontSize: 11, color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  paidBadge: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0fdf4', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 },
+  paidBadge: { alignItems: 'center', justifyContent: 'center', backgroundColor: BRAND_RED_LIGHT, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 },
   paidIcon: { fontSize: 18 },
   successFeeBox: {
     width: '100%',
@@ -569,7 +638,7 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   successFeeLabel: { fontSize: 13, color: '#888', fontWeight: '600' },
-  successFeeValue: { fontSize: 26, fontWeight: '800', color: '#16a34a' },
+  successFeeValue: { fontSize: 26, fontWeight: '800', color: BRAND_RED },
   receiptBox: {
     width: '100%',
     backgroundColor: '#f8f8f8',

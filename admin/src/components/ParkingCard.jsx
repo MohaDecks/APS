@@ -1,25 +1,30 @@
 import { Clock, Car, Plane, MapPin } from 'lucide-react';
 import { formatETB } from '../lib/api';
+import { useBranding } from '../lib/branding';
 
 const ZONES = ['A', 'B', 'C', 'D'];
 
 export function ActiveParkingCard({ session, bayNumber }) {
+  const { logoUrl, facilityName } = useBranding();
   const zone = ZONES[(bayNumber - 1) % ZONES.length];
   const spot = String(bayNumber).padStart(2, '0');
 
   return (
-    <div className="group relative bg-white rounded-2xl border-2 border-slate-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-      {/* Parking bay header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white">
+    <div className="group relative bg-white rounded-2xl border-2 border-neutral-200 shadow-md hover:shadow-xl hover:border-red-300 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-950 text-white">
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-md bg-emerald-500 flex items-center justify-center text-[10px] font-black">P</span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={facilityName} className="w-6 h-6 rounded-md object-contain bg-white/10" />
+          ) : (
+            <span className="w-6 h-6 rounded-md bg-red-600 flex items-center justify-center text-[10px] font-black">D</span>
+          )}
           <div>
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Bay {spot}</p>
             <p className="text-xs font-bold">Zone {zone} · Terminal</p>
           </div>
         </div>
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 live-pulse" />
+        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
+          <span className="w-2 h-2 rounded-full bg-red-400 live-pulse" />
           Occupied
         </span>
       </div>
@@ -37,10 +42,10 @@ export function ActiveParkingCard({ session, bayNumber }) {
 
         <div className="mt-3 flex items-center justify-between rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Car className="w-4 h-4 text-emerald-400" />
+            <Car className="w-4 h-4 text-red-400" />
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Running Fee</span>
           </div>
-          <span className="text-xl font-black text-emerald-400 tabular-nums">{formatETB(session.running_fee)}</span>
+          <span className="text-xl font-black text-red-400 tabular-nums">{formatETB(session.running_fee)}</span>
         </div>
       </div>
 
@@ -83,11 +88,14 @@ export function DepartedParkingCard({ session, bayNumber }) {
 }
 
 function PlateDisplay({ plate, muted }) {
+  const { facilityName } = useBranding();
+  const label = facilityName || 'Dirsh Parking';
+
   return (
     <div className={`plate-frame px-4 py-5 text-center ${muted ? 'opacity-70 border-slate-300' : ''}`}>
       <div className="flex items-center justify-center gap-1.5 mb-2">
-        <MapPin className="w-3 h-3 text-blue-600" />
-        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Ethiopia · Airport Parking</p>
+        <MapPin className="w-3 h-3 text-red-600" />
+        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{label}</p>
       </div>
       <p className={`font-plate font-extrabold tracking-[0.12em] leading-none ${muted ? 'text-2xl text-slate-500' : 'text-3xl text-slate-900'}`}>
         {plate}
@@ -109,20 +117,23 @@ function InfoBox({ icon: Icon, label, value, mono }) {
 }
 
 export function EmptyParkingLot() {
+  const { facilityName } = useBranding();
+  const label = facilityName || 'Dirsh Parking';
+
   return (
     <div className="col-span-full">
-      <div className="rounded-2xl overflow-hidden border-2 border-dashed border-slate-300 bg-white">
+      <div className="rounded-2xl overflow-hidden border-2 border-dashed border-neutral-300 bg-white">
         <div className="parking-lot-floor px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <Plane className="w-5 h-5 text-white" />
+              <Car className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-white font-bold text-sm">Terminal Parking Lot</p>
+              <p className="text-white font-bold text-sm">{label}</p>
               <p className="text-slate-400 text-xs">All bays available</p>
             </div>
           </div>
-          <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider">0 / Open</span>
+          <span className="text-red-400 text-xs font-bold uppercase tracking-wider">0 / Open</span>
         </div>
         <div className="py-16 px-8 text-center">
           <div className="inline-flex gap-3 mb-6">

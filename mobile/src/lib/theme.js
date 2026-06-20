@@ -1,16 +1,21 @@
 import { Platform } from 'react-native';
+import { BRAND_RED, BRAND_RED_DARK, BRAND_RED_LIGHT, BRAND_DARK } from './brand';
 
 export const theme = {
-  bg: '#F2F2F7',
+  bg: '#f4f4f5',
   surface: '#FFFFFF',
-  dark: '#1C1C1E',
-  label: '#8E8E93',
-  separator: '#E5E5EA',
-  green: '#34C759',
-  greenBg: '#E8F8ED',
-  red: '#FF3B30',
-  redBg: '#FFEBEA',
-  blue: '#007AFF',
+  dark: BRAND_DARK,
+  label: '#71717a',
+  separator: '#e4e4e7',
+  green: BRAND_RED,
+  greenBg: BRAND_RED_LIGHT,
+  success: BRAND_RED,
+  successBg: BRAND_RED_LIGHT,
+  red: BRAND_RED,
+  redBg: BRAND_RED_LIGHT,
+  primary: BRAND_RED,
+  primaryDark: BRAND_RED_DARK,
+  blue: BRAND_RED,
   font: Platform.select({
     ios: 'System',
     android: 'Roboto',

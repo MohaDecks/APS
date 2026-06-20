@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, History, Settings, Users, BarChart3, FileText, LogOut, CreditCard, ChevronDown, ChevronRight } from 'lucide-react';
 import Logo from './Logo';
+import { useBranding } from '../lib/branding';
 
 const navItems = [
   { to: '/dashboard', label: 'Live View', icon: Eye },
@@ -21,6 +22,7 @@ const reportLinks = [
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const branding = useBranding();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const reportsOpen = location.pathname.startsWith('/reports');
   const [reportsExpanded, setReportsExpanded] = useState(reportsOpen);
@@ -33,10 +35,10 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <aside className="w-64 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col shrink-0 shadow-xl">
-        <div className="p-6 border-b border-slate-800">
-          <Logo variant="compact" theme="dark" />
-          <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">Terminal short-term parking management</p>
+      <aside className="w-64 bg-gradient-to-b from-neutral-950 to-neutral-900 flex flex-col shrink-0 shadow-xl border-r border-red-950/40">
+        <div className="p-5 border-b border-neutral-800 flex flex-col items-center text-center">
+          <Logo variant="sidebar" theme="dark" />
+          <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">{branding.facilityName || 'Dirsh Parking'}</p>
         </div>
 
         <p className="px-6 pt-5 pb-2 text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold">Control Panel</p>
@@ -87,7 +89,7 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `block px-3 py-2 rounded-lg text-sm transition-all ${
                         isActive
-                          ? 'bg-emerald-600 text-white font-semibold'
+                          ? 'bg-red-600 text-white font-semibold'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }

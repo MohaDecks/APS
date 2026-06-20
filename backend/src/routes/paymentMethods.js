@@ -2,13 +2,13 @@ import { Router } from 'express';
 import PaymentMethod from '../models/PaymentMethod.js';
 import { authMiddleware, adminOnly } from '../middleware/auth.js';
 import { toApi, toApiList } from '../utils/format.js';
-import { paymentLogoUpload, logoUrlForFile, deleteLogoFile } from '../utils/upload.js';
+import { paymentLogoUpload, logoUrlForFile, deleteLogoFile, runSingleUpload } from '../utils/upload.js';
 
 const router = Router();
 
 function optionalLogoUpload(req, res, next) {
   if (req.is('multipart/form-data')) {
-    return paymentLogoUpload.single('logo')(req, res, next);
+    return runSingleUpload(paymentLogoUpload, 'logo')(req, res, next);
   }
   next();
 }
@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
   res.json(toApiList(methods));
 });
 
-router.post('/', paymentLogoUpload.single('logo'), async (req, res) => {
+router.post('/', runSingleUpload(paymentLogoUpload, 'logo'), async (req, res) => {
   try {
     const { name, icon, active, sort_order } = req.body;
     if (!name?.trim()) {

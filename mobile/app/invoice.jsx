@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Print from 'expo-print';
 import { formatETB, formatDuration, resolveAssetUrl } from '../src/lib/api';
 import { theme } from '../src/lib/theme';
+import { getFacilityLogoUri } from '../src/lib/receipt';
 
 export default function Invoice() {
   const { data } = useLocalSearchParams();
@@ -17,6 +18,8 @@ export default function Invoice() {
       </SafeAreaView>
     );
   }
+
+  const logoUri = getFacilityLogoUri(invoice);
 
   const handlePrint = async () => {
     if (Platform.OS === 'web') {
@@ -48,6 +51,9 @@ export default function Invoice() {
         <Text style={styles.pageTitle}>Receipt</Text>
 
         <View style={styles.receipt}>
+          {logoUri ? (
+            <Image source={{ uri: logoUri }} style={styles.facilityLogo} resizeMode="contain" />
+          ) : null}
           <Text style={styles.facility}>{invoice.facility_name}</Text>
           <Text style={styles.receiptLabel}>PARKING RECEIPT</Text>
 
@@ -109,7 +115,8 @@ const styles = StyleSheet.create({
   content: { padding: theme.space.lg },
   emptyText: { textAlign: 'center', marginTop: 60, color: theme.label, fontFamily: theme.font },
   pageTitle: { fontSize: 34, fontWeight: '700', color: theme.dark, marginBottom: theme.space.lg, fontFamily: theme.font, letterSpacing: -0.5 },
-  receipt: { backgroundColor: theme.surface, borderRadius: theme.radius.lg, padding: theme.space.lg },
+  receipt: { backgroundColor: theme.surface, borderRadius: theme.radius.lg, padding: theme.space.lg, borderWidth: 2, borderColor: theme.red },
+  facilityLogo: { width: '100%', height: 56, marginBottom: 8 },
   facility: { fontSize: 20, fontWeight: '700', textAlign: 'center', color: theme.dark, fontFamily: theme.font },
   receiptLabel: { fontSize: 11, color: theme.label, textAlign: 'center', marginTop: 4, letterSpacing: 1.5, fontWeight: '600', fontFamily: theme.font },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: theme.separator, marginVertical: theme.space.md },
@@ -126,7 +133,7 @@ const styles = StyleSheet.create({
     marginTop: theme.space.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   totalLabel: { fontSize: 15, color: theme.label, fontWeight: '600', fontFamily: theme.font },
-  totalValue: { fontSize: 28, fontWeight: '700', color: theme.green, fontFamily: theme.font },
+  totalValue: { fontSize: 28, fontWeight: '700', color: theme.red, fontFamily: theme.font },
   printBtn: { backgroundColor: theme.blue, borderRadius: theme.radius.md, padding: 16, alignItems: 'center', marginTop: theme.space.lg },
   printBtnText: { color: '#fff', fontWeight: '600', fontSize: 17, fontFamily: theme.font },
   doneBtn: { padding: 16, alignItems: 'center', marginTop: theme.space.xs },

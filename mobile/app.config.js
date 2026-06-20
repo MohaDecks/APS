@@ -2,7 +2,7 @@ const basePath = process.env.EXPO_PUBLIC_BASE_PATH || '';
 
 export default {
   expo: {
-    name: 'Airport Parking',
+    name: 'Dirsh Parking',
     slug: 'airport-parking',
     version: '1.0.0',
     orientation: 'portrait',
@@ -11,7 +11,7 @@ export default {
     splash: {
       image: './assets/icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#F2F2F7',
+      backgroundColor: '#121212',
     },
     scheme: 'airportparking',
     android: {
@@ -25,11 +25,11 @@ export default {
       bundler: 'metro',
       output: 'single',
       favicon: './public/favicon.png',
-      name: 'Airport Parking',
+      name: 'Dirsh Parking',
       shortName: 'Parking',
       description: 'Check vehicles in and out. Manage airport parking operations.',
-      themeColor: '#F2F2F7',
-      backgroundColor: '#F2F2F7',
+      themeColor: '#dc2626',
+      backgroundColor: '#121212',
       display: 'standalone',
       startUrl: '/',
       scope: '/',

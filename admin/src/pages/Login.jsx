@@ -5,7 +5,10 @@ import toast from 'react-hot-toast';
 import api from '../lib/api';
 import Logo from '../components/Logo';
 
+import { useBranding } from '../lib/branding';
+
 export default function Login() {
+  const branding = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,9 +38,9 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left — airport branding */}
       <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden airport-grid-bg text-white flex-col justify-between p-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-blue-950/80 to-slate-900/90" />
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="absolute bottom-20 -left-16 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-neutral-950/95 via-red-950/70 to-neutral-900/90" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-red-500/10 blur-3xl" />
+        <div className="absolute bottom-20 -left-16 w-64 h-64 rounded-full bg-red-600/10 blur-3xl" />
 
         <div className="relative flex flex-col items-start">
           <Logo variant="hero" theme="dark" className="mb-14" />
@@ -46,7 +49,7 @@ export default function Login() {
             Terminal car parking operations
           </h2>
           <p className="text-slate-400 mt-4 max-w-sm text-base leading-relaxed">
-            Monitor live parking bays, track revenue, and manage operator accounts for your airport facility.
+            Monitor live parking bays, track revenue, and manage operator accounts for {branding.facilityName || 'Dirsh Parking'}.
           </p>
 
           <div className="mt-10 grid grid-cols-3 gap-3 max-w-md">
@@ -56,7 +59,7 @@ export default function Login() {
               { icon: Shield, label: 'Admin Only', sub: 'Secure' },
             ].map(({ icon: Icon, label, sub }) => (
               <div key={label} className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <Icon className="w-5 h-5 text-emerald-400 mb-2" />
+                <Icon className="w-5 h-5 text-red-400 mb-2" />
                 <p className="text-sm font-bold">{label}</p>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">{sub}</p>
               </div>
@@ -91,7 +94,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-shadow"
                   placeholder="admin@parking.com"
                   required
                 />
@@ -102,22 +105,22 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-shadow"
                   required
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 shadow-lg shadow-slate-900/20"
+                className="w-full btn-primary py-3.5 text-sm font-bold shadow-lg shadow-red-900/20"
               >
                 {loading ? 'Signing in...' : 'Enter Parking Dashboard'}
               </button>
             </form>
 
             <div className="mt-6 flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                <Car className="w-4 h-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                <Car className="w-4 h-4 text-red-600" />
               </div>
               <p className="text-xs text-slate-500">Operators check cars in/out via the <strong className="text-slate-700">mobile app</strong></p>
             </div>

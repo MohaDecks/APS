@@ -1,59 +1,47 @@
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { formatETB, formatDuration } from './api';
+import { formatETB, formatDuration, resolveAssetUrl } from './api';
+import { BRAND_NAME } from './brand';
+import { getBranding, getBrandingLogoUri } from './branding';
 
 const INK = '#111111';
-const TICKET_W = 340;
+const TICKET_W = 320;
 const PAD = 22;
 
 function fmtTime12(iso) {
-  if (!iso) return '— : — —';
+  if (!iso) return '00:00 —';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '— : — —';
+  if (Number.isNaN(d.getTime())) return '00:00 —';
   let h = d.getHours();
   const m = String(d.getMinutes()).padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
-  return `${h} : ${m} ${ampm}`;
+  return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
 }
 
-function fmtDateTicket(iso) {
-  const d = iso ? new Date(iso) : new Date();
-  if (Number.isNaN(d.getTime())) return '— / — / —';
+function fmtDateLine(iso) {
+  if (!iso) return 'Date: 00/00/00';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Date: 00/00/00';
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${mm} / ${dd} / ${yyyy}`;
+  const yy = String(d.getFullYear()).slice(-2);
+  return `Date: ${mm}/${dd}/${yy}`;
 }
 
-function fmtPaid(amount) {
-  return `Paid : ${Number(amount ?? 0).toFixed(2)}`;
+function facilityInfo(invoice) {
+  const branding = getBranding();
+  const name = invoice?.facility_name || branding.facilityName || BRAND_NAME;
+  return {
+    name,
+    contact: invoice?.payment_phone || '+251 —',
+  };
 }
 
-function companyLines(invoice) {
-  const name = invoice.facility_name || 'Airport Parking';
-  const address = invoice.facility_address || 'Bole International Airport, Addis Ababa';
-  return { name, address };
-}
-
-const CAR_FRONT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="${INK}">
-  <rect x="14" y="28" width="52" height="26" rx="6"/>
-  <path d="M22 28 L28 16 H52 L58 28 Z"/>
-  <rect x="30" y="18" width="20" height="10" rx="2" fill="#fff"/>
-  <circle cx="26" cy="56" r="7"/><circle cx="54" cy="56" r="7"/>
-  <circle cx="26" cy="56" r="3" fill="#fff"/><circle cx="54" cy="56" r="3" fill="#fff"/>
-</svg>`;
-
-const CAR_SIDE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 40" fill="${INK}">
-  <rect x="4" y="18" width="56" height="14" rx="4"/>
-  <path d="M14 18 L20 8 H38 L46 18 Z"/>
-  <rect x="22" y="10" width="14" height="8" rx="1" fill="#fff"/>
-  <circle cx="18" cy="34" r="5"/><circle cx="46" cy="34" r="5"/>
-</svg>`;
-
-function iconDataUrl(svg) {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+function paymentLine(invoice) {
+  if (!invoice.payment_method_name) return '';
+  return `Payment: ${invoice.payment_method_name}`;
 }
 
 function ticketStylesHtml() {
@@ -61,58 +49,78 @@ function ticketStylesHtml() {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    background: #eef2f7; padding: 24px;
+    background: #dbeafe; padding: 32px;
     display: flex; justify-content: center;
   }
   .ticket {
     width: ${TICKET_W}px; background: #fff; color: ${INK};
-    border: 4px solid #1e40af; padding: ${PAD}px ${PAD - 4}px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding: ${PAD}px 18px 24px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.15);
   }
-  .top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-  .car-front { width: 72px; height: 72px; flex-shrink: 0; }
-  .company { flex: 1; padding-top: 6px; }
-  .company-name { font-size: 15px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; }
-  .company-addr { font-size: 13px; line-height: 1.3; color: #333; }
-  .dots { border: none; border-top: 2px dotted ${INK}; margin: 14px 0; }
-  .title { text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .date { text-align: center; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .time-row {
+  .hero {
     display: flex; align-items: center; justify-content: center;
-    gap: 8px; font-size: 14px; font-weight: 700; margin: 10px 0;
+    margin-bottom: 10px;
   }
-  .time-row.exit { margin-top: 6px; }
-  .car-side { width: 48px; height: 30px; }
-  .arrow { font-size: 18px; font-weight: 900; line-height: 1; }
-  .plate {
-    text-align: center; font-size: 28px; font-weight: 900;
-    letter-spacing: 3px; font-family: ui-monospace, Menlo, monospace;
-    margin: 14px 0 10px; padding: 8px 0;
+  .title {
+    text-align: center; font-size: 15px; font-weight: 800;
+    letter-spacing: 0.6px; margin: 4px 0 10px;
   }
-  .paid { text-align: center; font-size: 26px; font-weight: 800; margin: 16px 0 8px; }
-  .meta { text-align: center; font-size: 12px; color: #444; margin-bottom: 6px; }
+  .rule { border: none; border-top: 1.5px solid ${INK}; margin: 0 0 14px; }
+  .center { text-align: center; font-size: 13px; line-height: 1.55; margin-bottom: 2px; }
+  .ticket-no { text-align: center; font-size: 13px; font-weight: 700; margin-top: 10px; }
+  .cols-outer {
+    position: relative; margin: 18px 0 16px; padding: 0 8px;
+    border-left: 1.5px solid ${INK}; border-right: 1.5px solid ${INK};
+  }
+  .cols { display: flex; min-height: 150px; }
+  .col { flex: 1; padding: 10px 8px; }
+  .lbl { font-size: 13px; font-weight: 800; margin-bottom: 5px; display: block; }
+  .val { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .col-right { text-align: right; }
+  .paid-lbl { font-size: 13px; font-weight: 800; margin-top: 20px; margin-bottom: 3px; }
+  .paid-val { font-size: 16px; font-weight: 800; }
+  .meta { text-align: center; font-size: 11px; color: #333; margin: 8px 0 10px; line-height: 1.4; }
+  .logo-wide { width: 220px; height: 100px; object-fit: contain; margin: 0 auto 8px; display: block; }
+  .thanks {
+    text-align: center; font-size: 12px; font-weight: 800;
+    letter-spacing: 0.3px; margin: 14px 0 12px;
+  }
   .barcode {
     display: flex; justify-content: center; align-items: flex-end;
-    height: 52px; gap: 2px; margin: 12px 0 14px;
+    height: 44px; gap: 2px;
   }
-  .bar { background: ${INK}; width: 2px; }
-  .thanks {
-    text-align: center; font-size: 13px; font-weight: 800;
-    letter-spacing: 0.4px; text-transform: uppercase;
-  }`;
+  .bar { background: ${INK}; }`;
 }
 
 function barcodeBars(code) {
   const src = String(code || '0000');
   const bars = [];
   let seed = src.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  for (let i = 0; i < 72; i += 1) {
+  for (let i = 0; i < 76; i += 1) {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    const h = 28 + (seed % 22);
-    const w = (seed % 3) === 0 ? 3 : 2;
-    bars.push({ h, w });
+    bars.push({ h: 20 + (seed % 24), w: (seed % 3) === 0 ? 3 : 2 });
   }
   return bars;
+}
+
+export function getFacilityInfo(invoice) {
+  return facilityInfo(invoice);
+}
+
+export function formatReceiptTime12(iso) {
+  return fmtTime12(iso);
+}
+
+export function formatReceiptDateLine(iso) {
+  return fmtDateLine(iso);
+}
+
+export function getBarcodeBars(code) {
+  return barcodeBars(code);
+}
+
+export function getFacilityLogoUri(invoice) {
+  return getBrandingLogoUri(invoice);
 }
 
 function barcodeHtml(code) {
@@ -122,89 +130,80 @@ function barcodeHtml(code) {
 }
 
 export function buildReceiptHtml(invoice) {
-  const { name, address } = companyLines(invoice);
-  const exitDate = invoice.exit_time || invoice.entry_time;
-  const paymentLine = invoice.payment_method_name
-    ? `<p class="meta">Payment: ${invoice.payment_method_name}</p>`
-    : '';
-  const invoiceLine = invoice.invoice_number
-    ? `<p class="meta">Invoice: ${invoice.invoice_number}</p>`
+  const { name, contact } = facilityInfo(invoice);
+  const ticket = invoice.invoice_number || '0000000';
+  const payLine = paymentLine(invoice);
+  const logoUri = getFacilityLogoUri(invoice);
+  const hasLogo = Boolean(logoUri);
+
+  const heroHtml = hasLogo
+    ? `<img class="logo-wide" src="${logoUri}" alt="Logo"/>`
     : '';
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><title>Receipt ${invoice.invoice_number || ''}</title>
+<html><head><meta charset="utf-8"/><title>Receipt ${ticket}</title>
 <style>${ticketStylesHtml()}</style></head>
 <body>
   <div class="ticket">
-    <div class="top">
-      <img class="car-front" src="${iconDataUrl(CAR_FRONT_SVG)}" alt=""/>
-      <div class="company">
-        <div class="company-name">${name}</div>
-        <div class="company-addr">${address}</div>
+    ${heroHtml}
+    <div class="title">PARKING RECEIPT</div>
+    <hr class="rule"/>
+    ${hasLogo ? '' : `<p class="center">${name}</p>`}
+    <p class="center">${contact}</p>
+    <p class="ticket-no">Ticket#: ${ticket}</p>
+    <div class="cols-outer">
+      <div class="cols">
+        <div class="col">
+          <span class="lbl">Entry Time</span>
+          <div class="val">${fmtTime12(invoice.entry_time)}</div>
+          <div class="val">${fmtDateLine(invoice.entry_time)}</div>
+          <span class="lbl" style="margin-top:16px">Duration</span>
+          <div class="val">${formatDuration(invoice.duration_minutes)}</div>
+        </div>
+        <div class="col col-right">
+          <span class="lbl">Exit Time</span>
+          <div class="val">${fmtTime12(invoice.exit_time)}</div>
+          <div class="val">${fmtDateLine(invoice.exit_time)}</div>
+          <div class="paid-lbl">PAID:</div>
+          <div class="paid-val">${formatETB(invoice.total_fee)}</div>
+        </div>
       </div>
     </div>
-    <hr class="dots"/>
-    <div class="title">CHECK FOR PARKING</div>
-    <div class="date">${fmtDateTicket(exitDate)}</div>
-    <hr class="dots"/>
-    <div class="time-row">
-      <img class="car-side" src="${iconDataUrl(CAR_SIDE_SVG)}" alt=""/>
-      <span class="arrow">→</span>
-      <span>FROM : ${fmtTime12(invoice.entry_time)}</span>
-    </div>
-    <div class="plate">${invoice.plate || '—'}</div>
-    <div class="time-row exit">
-      <span>TO : ${fmtTime12(invoice.exit_time)}</span>
-      <span class="arrow">→</span>
-      <img class="car-side" src="${iconDataUrl(CAR_SIDE_SVG)}" alt=""/>
-    </div>
-    <div class="paid">${fmtPaid(invoice.total_fee)}</div>
-    ${invoiceLine}
-    ${paymentLine}
-    <p class="meta">Duration: ${formatDuration(invoice.duration_minutes)} · Rate: ${formatETB(invoice.hourly_rate)}/hr</p>
-    <hr class="dots"/>
-    <div class="barcode">${barcodeHtml(invoice.invoice_number || invoice.plate)}</div>
-    <div class="thanks">THANK YOU AND LUCKY ROAD !</div>
+    ${payLine ? `<p class="meta">${payLine}</p>` : ''}
+    <div class="thanks">THANK YOU AND DRIVE SAFELY</div>
+    <div class="barcode">${barcodeHtml(ticket)}</div>
   </div>
 </body></html>`;
 }
 
 export function buildReceiptText(invoice) {
-  const { name, address } = companyLines(invoice);
+  const { name, contact } = facilityInfo(invoice);
+  const ticket = invoice.invoice_number || '0000000';
   const lines = [
+    'PARKING RECEIPT',
     name,
-    address,
-    '────────────────',
-    'CHECK FOR PARKING',
-    fmtDateTicket(invoice.exit_time || invoice.entry_time),
-    '────────────────',
-    `FROM : ${fmtTime12(invoice.entry_time)}`,
-    `Plate: ${invoice.plate}`,
-    `TO : ${fmtTime12(invoice.exit_time)}`,
-    fmtPaid(invoice.total_fee),
-  ];
-  if (invoice.invoice_number) lines.push(`Invoice: ${invoice.invoice_number}`);
-  if (invoice.payment_method_name) lines.push(`Payment: ${invoice.payment_method_name}`);
-  lines.push(
+    contact,
+    `Ticket#: ${ticket}`,
+    `Plate: ${invoice.plate || '—'}`,
+    'Entry Time',
+    fmtTime12(invoice.entry_time),
+    fmtDateLine(invoice.entry_time),
     `Duration: ${formatDuration(invoice.duration_minutes)}`,
-    '────────────────',
-    'THANK YOU AND LUCKY ROAD !',
-  );
+    'Exit Time',
+    fmtTime12(invoice.exit_time),
+    fmtDateLine(invoice.exit_time),
+    `PAID: ${formatETB(invoice.total_fee)}`,
+  ];
+  if (invoice.payment_method_name) {
+    lines.push(`Payment: ${invoice.payment_method_name}`);
+  }
+  lines.push('THANK YOU AND DRIVE SAFELY');
   return lines.join('\n');
 }
 
 function pngFilenameFor(invoice) {
   const base = (invoice.invoice_number || invoice.plate || 'receipt').replace(/[^\w-]+/g, '_');
   return `${base}.png`;
-}
-
-function htmlFilenameFor(invoice) {
-  return `${invoice.invoice_number || invoice.plate || 'receipt'}.html`;
-}
-
-function isMobileWeb() {
-  if (Platform.OS !== 'web' || typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 }
 
 export function isInAppWebView() {
@@ -214,19 +213,13 @@ export function isInAppWebView() {
   if (params.get('inApp') === '1' || params.get('embedded') === '1') return true;
 
   const ua = navigator.userAgent || '';
-
-  if (/;\s*wv\)/i.test(ua) || /\bWebView\b/i.test(ua)) return true;
-  if (/flutter/i.test(ua)) return true;
-
+  if (/;\s*wv\)/i.test(ua) || /\bWebView\b/i.test(ua) || /flutter/i.test(ua)) return true;
   if (window.flutter_inappwebview || window.DirshayApp || window.dirshayApp) return true;
   if (window.Android?.saveReceipt || window.Android?.downloadFile) return true;
   if (window.webkit?.messageHandlers?.saveReceipt || window.webkit?.messageHandlers?.dirshay) return true;
 
-  if (/iPhone|iPad|iPod/i.test(ua) && /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Safari/i.test(ua)) {
-    return true;
-  }
-
-  if (isMobileWeb() && typeof navigator.share !== 'function') return true;
+  const isMobile = /iphone|ipad|ipod|android/i.test(ua);
+  if (isMobile && typeof navigator.share !== 'function') return true;
 
   return false;
 }
@@ -241,50 +234,32 @@ function loadImage(url) {
   });
 }
 
-function drawDottedLine(ctx, x, y, w) {
+function drawSolidLine(ctx, x, y, w) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.lineTo(x + w, y);
   ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 function drawBarcode(ctx, x, y, maxW, code) {
-  const bars = barcodeBars(code);
   let cx = x;
-  const baseY = y + 52;
+  const baseY = y + 44;
   ctx.fillStyle = INK;
-  for (const { h, w } of bars) {
+  for (const { h, w } of barcodeBars(code)) {
     if (cx + w > x + maxW) break;
     ctx.fillRect(cx, baseY - h, w, h);
     cx += w + 2;
   }
 }
 
-function wrapText(ctx, text, maxW) {
-  const words = text.split(' ');
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
 async function renderReceiptCanvas(invoice) {
   const width = TICKET_W;
   const innerW = width - PAD * 2;
-  const height = 620;
+  const height = 540;
+  const { name, contact } = facilityInfo(invoice);
+  const ticket = invoice.invoice_number || '0000000';
 
   const canvas = document.createElement('canvas');
   const scale = 2;
@@ -297,101 +272,102 @@ async function renderReceiptCanvas(invoice) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = '#1e40af';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(2, 2, width - 4, height - 4);
-
   let y = PAD;
-  const { name, address } = companyLines(invoice);
 
-  const carFront = await loadImage(iconDataUrl(CAR_FRONT_SVG));
-  ctx.drawImage(carFront, PAD, y, 68, 68);
+  const logoUri = getFacilityLogoUri(invoice);
+  let drewLogo = false;
 
+  if (logoUri) {
+    try {
+      const logo = await loadImage(logoUri);
+      const logoW = 220;
+      const logoH = 100;
+      ctx.drawImage(logo, (width - logoW) / 2, y, logoW, logoH);
+      y += logoH + 12;
+      drewLogo = true;
+    } catch {
+      /* logo unavailable — fall back to facility name */
+    }
+  }
+
+  ctx.textAlign = 'center';
   ctx.fillStyle = INK;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.font = '700 14px Arial, Helvetica, sans-serif';
-  const nameLines = wrapText(ctx, name, innerW - 82);
-  nameLines.forEach((line, i) => {
-    ctx.fillText(line, PAD + 82, y + 8 + i * 18);
-  });
-  ctx.font = '13px Arial, Helvetica, sans-serif';
-  const addrLines = wrapText(ctx, address, innerW - 82);
-  const addrY = y + 8 + nameLines.length * 18 + 4;
-  addrLines.forEach((line, i) => {
-    ctx.fillText(line, PAD + 82, addrY + i * 16);
-  });
-
-  y += 78;
-  drawDottedLine(ctx, PAD, y, innerW);
+  ctx.font = '800 14px Arial, Helvetica, sans-serif';
+  ctx.fillText('PARKING RECEIPT', width / 2, y);
+  y += 12;
+  drawSolidLine(ctx, PAD, y, innerW);
   y += 18;
 
-  ctx.textAlign = 'center';
-  ctx.font = '800 17px Arial, Helvetica, sans-serif';
-  ctx.fillText('CHECK FOR PARKING', width / 2, y);
-  y += 24;
-  ctx.font = '600 14px Arial, Helvetica, sans-serif';
-  ctx.fillText(fmtDateTicket(invoice.exit_time || invoice.entry_time), width / 2, y);
-  y += 22;
-  drawDottedLine(ctx, PAD, y, innerW);
-  y += 20;
+  ctx.font = '13px Arial, Helvetica, sans-serif';
+  if (!drewLogo) {
+    ctx.fillText(name, width / 2, y);
+    y += 16;
+  }
+  ctx.fillText(contact, width / 2, y);
+  y += 18;
 
-  const carSide = await loadImage(iconDataUrl(CAR_SIDE_SVG));
-  ctx.textAlign = 'left';
   ctx.font = '700 13px Arial, Helvetica, sans-serif';
-  ctx.drawImage(carSide, PAD + 8, y, 46, 28);
-  ctx.fillText('→', PAD + 60, y + 8);
-  ctx.fillText(`FROM : ${fmtTime12(invoice.entry_time)}`, PAD + 78, y + 8);
-  y += 44;
+  ctx.fillText(`Ticket#: ${ticket}`, width / 2, y);
+  y += 24;
 
-  ctx.textAlign = 'center';
-  ctx.font = '900 28px ui-monospace, Menlo, monospace';
-  ctx.fillText(String(invoice.plate || '—'), width / 2, y);
-  y += 38;
+  const colTop = y;
+  const colH = 150;
+  const sideX = PAD + 8;
+  const sideW = innerW - 16;
+
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(sideX, colTop);
+  ctx.lineTo(sideX, colTop + colH);
+  ctx.moveTo(sideX + sideW, colTop);
+  ctx.lineTo(sideX + sideW, colTop + colH);
+  ctx.stroke();
+
+  const leftX = sideX + 10;
+  const rightX = sideX + sideW - 10;
+
+  ctx.textAlign = 'left';
+  ctx.font = '800 12px Arial, Helvetica, sans-serif';
+  ctx.fillText('Entry Time', leftX, colTop + 16);
+  ctx.font = '500 12px Arial, Helvetica, sans-serif';
+  ctx.fillText(fmtTime12(invoice.entry_time), leftX, colTop + 32);
+  ctx.fillText(fmtDateLine(invoice.entry_time), leftX, colTop + 48);
+  ctx.font = '800 12px Arial, Helvetica, sans-serif';
+  ctx.fillText('Duration', leftX, colTop + 78);
+  ctx.font = '500 12px Arial, Helvetica, sans-serif';
+  ctx.fillText(formatDuration(invoice.duration_minutes), leftX, colTop + 94);
 
   ctx.textAlign = 'right';
-  ctx.font = '700 13px Arial, Helvetica, sans-serif';
-  ctx.fillText(`TO : ${fmtTime12(invoice.exit_time)}`, width - PAD - 78, y);
-  ctx.textAlign = 'left';
-  ctx.fillText('→', width - PAD - 72, y);
-  ctx.drawImage(carSide, width - PAD - 54, y - 4, 46, 28);
-  y += 40;
-
-  ctx.textAlign = 'center';
-  ctx.font = '800 24px Arial, Helvetica, sans-serif';
-  ctx.fillText(fmtPaid(invoice.total_fee), width / 2, y);
-  y += 28;
-
-  ctx.font = '12px Arial, Helvetica, sans-serif';
-  if (invoice.invoice_number) {
-    ctx.fillText(`Invoice: ${invoice.invoice_number}`, width / 2, y);
-    y += 16;
-  }
-  if (invoice.payment_method_name) {
-    ctx.fillText(`Payment: ${invoice.payment_method_name}`, width / 2, y);
-    y += 16;
-  }
-  ctx.fillText(
-    `Duration: ${formatDuration(invoice.duration_minutes)} · Rate: ${formatETB(invoice.hourly_rate)}/hr`,
-    width / 2,
-    y,
-  );
-  y += 22;
-
-  drawDottedLine(ctx, PAD, y, innerW);
-  y += 16;
-  drawBarcode(ctx, PAD + 10, y, innerW - 20, invoice.invoice_number || invoice.plate);
-  y += 68;
-
   ctx.font = '800 12px Arial, Helvetica, sans-serif';
-  ctx.fillText('THANK YOU AND LUCKY ROAD !', width / 2, y);
+  ctx.fillText('Exit Time', rightX, colTop + 16);
+  ctx.font = '500 12px Arial, Helvetica, sans-serif';
+  ctx.fillText(fmtTime12(invoice.exit_time), rightX, colTop + 32);
+  ctx.fillText(fmtDateLine(invoice.exit_time), rightX, colTop + 48);
+  ctx.font = '800 12px Arial, Helvetica, sans-serif';
+  ctx.fillText('PAID:', rightX, colTop + 88);
+  ctx.font = '800 15px Arial, Helvetica, sans-serif';
+  ctx.fillText(formatETB(invoice.total_fee), rightX, colTop + 106);
+
+  y = colTop + colH + 12;
+  ctx.textAlign = 'center';
+  ctx.font = '11px Arial, Helvetica, sans-serif';
+  const payLine = paymentLine(invoice);
+  if (payLine) {
+    ctx.fillText(payLine, width / 2, y);
+    y += 16;
+  }
+
+  ctx.font = '800 11px Arial, Helvetica, sans-serif';
+  ctx.fillText('THANK YOU AND DRIVE SAFELY', width / 2, y);
+  y += 16;
+  drawBarcode(ctx, PAD + 4, y, innerW - 8, ticket);
 
   return canvas;
 }
 
 export async function buildReceiptDataUrl(invoice) {
-  const canvas = await renderReceiptCanvas(invoice);
-  return canvas.toDataURL('image/png');
+  return (await renderReceiptCanvas(invoice)).toDataURL('image/png');
 }
 
 async function buildReceiptPngBlob(invoice) {
@@ -405,29 +381,57 @@ async function buildReceiptPngBlob(invoice) {
   });
 }
 
+async function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function downloadBlobWeb(blob, filename) {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+
+  const clickLink = (href) => {
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  if (isIOS) {
+    const dataUrl = await blobToDataUrl(blob);
+    clickLink(dataUrl);
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.rel = 'noopener';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  try {
+    clickLink(url);
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+}
+
+function isMobileWebBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  return /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 }
 
 async function shareBlobWeb(blob, filename, title) {
   if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
     throw new Error('Share unavailable');
   }
-
-  const file = new File([blob], filename, { type: blob.type || 'image/png' });
+  const file = new File([blob], filename, { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({ files: [file], title });
     return;
   }
-
   await navigator.share({ title, text: title });
 }
 
@@ -444,12 +448,8 @@ async function tryNativeAppSave(dataUrl, invoice) {
     () => window.flutter_inappwebview?.callHandler?.('downloadFile', payload),
     () => window.DirshayApp?.saveReceipt?.(JSON.stringify(payload)),
     () => window.dirshayApp?.saveReceipt?.(JSON.stringify(payload)),
-    () => window.DirshayApp?.postMessage?.(JSON.stringify(payload)),
-    () => window.dirshayApp?.postMessage?.(JSON.stringify(payload)),
     () => window.Android?.saveReceipt?.(base64, filename),
-    () => window.Android?.downloadFile?.(base64, filename, 'image/png'),
     () => window.webkit?.messageHandlers?.saveReceipt?.postMessage(payload),
-    () => window.webkit?.messageHandlers?.dirshay?.postMessage(payload),
   ];
 
   for (const run of handlers) {
@@ -457,22 +457,20 @@ async function tryNativeAppSave(dataUrl, invoice) {
       const result = await run();
       if (result !== false) return true;
     } catch {
-      /* try next bridge */
+      /* next */
     }
   }
-
   try {
     window.parent?.postMessage?.(payload, '*');
   } catch {
     /* ignore */
   }
-
   return false;
 }
 
 export async function copyReceiptText(invoice) {
   const text = buildReceiptText(invoice);
-  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+  if (Platform.OS === 'web' && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
     return;
   }
@@ -487,44 +485,63 @@ export async function copyReceiptText(invoice) {
   }
 }
 
-async function saveReceiptImageWeb(invoice) {
-  const dataUrl = await buildReceiptDataUrl(invoice);
-  const text = buildReceiptText(invoice);
+/** Generate receipt PNG and save to device (download / share / native app). */
+export async function saveReceiptPngFile(invoice) {
+  if (Platform.OS !== 'web') {
+    return downloadReceipt(invoice);
+  }
+
   const filename = pngFilenameFor(invoice);
+  const blob = await buildReceiptPngBlob(invoice);
+  const dataUrl = await blobToDataUrl(blob);
 
   if (isInAppWebView()) {
     const saved = await tryNativeAppSave(dataUrl, invoice);
-    if (saved) return { action: 'saved' };
-    return { action: 'preview', dataUrl, text };
+    if (saved) return { action: 'saved', filename };
   }
 
-  const blob = await buildReceiptPngBlob(invoice);
-
-  try {
-    await shareBlobWeb(blob, filename, 'Parking Receipt');
-    return { action: 'shared' };
-  } catch (err) {
-    if (err?.name === 'AbortError') return { action: 'cancelled' };
-  }
-
+  // Direct file download first (desktop + mobile)
   try {
     await downloadBlobWeb(blob, filename);
-    return { action: 'saved' };
+    return { action: 'saved', filename };
   } catch {
-    return { action: 'preview', dataUrl, text };
+    /* fall through */
   }
+
+  // Last resort: system share sheet (Save to Photos / Files)
+  if (isMobileWebBrowser() && typeof navigator?.share === 'function') {
+    try {
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Parking Receipt' });
+        return { action: 'saved', filename };
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') throw err;
+    }
+  }
+
+  throw new Error('Could not save receipt');
 }
 
-async function downloadReceiptHtmlWeb(html, invoice) {
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  await downloadBlobWeb(blob, htmlFilenameFor(invoice));
-  return { action: 'saved' };
+async function saveReceiptImageWeb(invoice) {
+  try {
+    return await saveReceiptPngFile(invoice);
+  } catch (err) {
+    if (err?.name === 'AbortError') return { action: 'cancelled' };
+    const dataUrl = await buildReceiptDataUrl(invoice);
+    return {
+      action: 'preview',
+      dataUrl,
+      text: buildReceiptText(invoice),
+      filename: pngFilenameFor(invoice),
+    };
+  }
 }
 
 async function sharePdfOnNative(html) {
   const { uri } = await Print.printToFileAsync({ html });
-  const canShare = await Sharing.isAvailableAsync();
-  if (canShare) {
+  if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
       dialogTitle: 'Save or share receipt',
@@ -537,20 +554,12 @@ async function sharePdfOnNative(html) {
 }
 
 export function receiptActionLabel() {
-  return 'Download';
+  return 'Download Receipt';
 }
 
-/** @returns {{ action: 'saved'|'shared'|'preview'|'cancelled' }} */
 export async function downloadReceipt(invoice) {
-  const html = buildReceiptHtml(invoice);
-
   if (Platform.OS === 'web') {
-    if (isMobileWeb()) {
-      return saveReceiptImageWeb(invoice);
-    }
-    await downloadReceiptHtmlWeb(html, invoice);
-    return { action: 'saved' };
+    return saveReceiptImageWeb(invoice);
   }
-
-  return sharePdfOnNative(html);
+  return sharePdfOnNative(buildReceiptHtml(invoice));
 }

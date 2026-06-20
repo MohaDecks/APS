@@ -13,6 +13,7 @@ const sessionSchema = new mongoose.Schema(
     payment_method_name: { type: String },
     payment_method_icon: { type: String },
     payment_method_logo_url: { type: String },
+    payment_phone: { type: String },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: false } }
 );

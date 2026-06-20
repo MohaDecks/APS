@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from '../src/components/SplashScreen';
-
-const SPLASH_MS = 2200;
+import { loadBranding } from '../src/lib/branding';
+import { SPLASH_DURATION_MS } from '../src/lib/brand';
 
 export default function Index() {
   const router = useRouter();
@@ -11,9 +11,9 @@ export default function Index() {
   useEffect(() => {
     const started = Date.now();
 
-    AsyncStorage.getItem('token').then((token) => {
+    Promise.all([AsyncStorage.getItem('token'), loadBranding(true)]).then(([token]) => {
       const elapsed = Date.now() - started;
-      const wait = Math.max(0, SPLASH_MS - elapsed);
+      const wait = Math.max(0, SPLASH_DURATION_MS - elapsed);
 
       setTimeout(() => {
         router.replace(token ? '/terminal' : '/login');

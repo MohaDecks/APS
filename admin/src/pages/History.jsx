@@ -83,17 +83,17 @@ export default function History() {
                 value={plate}
                 onChange={(e) => setPlate(e.target.value)}
                 placeholder="SEARCH BY PLATE"
-                className="w-full border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                className="w-full border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">From</label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">To</label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
           </div>
           <button
             type="button"
@@ -106,7 +106,7 @@ export default function History() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+            className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50"
           >
             {loading ? 'Searching...' : 'Search'}
           </button>

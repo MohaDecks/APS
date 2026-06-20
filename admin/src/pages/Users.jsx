@@ -48,7 +48,7 @@ export default function Users() {
       >
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 shadow-sm"
+          className="flex items-center gap-2 btn-primary px-4 py-2.5 text-sm shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New user
@@ -60,22 +60,22 @@ export default function Users() {
           <form onSubmit={handleCreate} className="bg-white border border-slate-200/80 rounded-2xl p-6 mb-6 grid grid-cols-2 gap-4 shadow-sm">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900" required />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500" required />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900" required />
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500" required />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900" required />
+              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500" required />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Role</label>
               <select
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900 bg-white"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 bg-white"
                 required
               >
                 <option value="operator">Operator</option>
@@ -90,7 +90,7 @@ export default function Users() {
               </p>
             </div>
             <div className="col-span-2 flex justify-end">
-              <button type="submit" className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">
+              <button type="submit" className="btn-primary px-6 py-2.5 text-sm">
                 Create {form.role === 'admin' ? 'admin' : 'operator'}
               </button>
             </div>
@@ -114,7 +114,7 @@ export default function Users() {
                   <td className="px-6 py-4 font-semibold text-slate-800">{u.name}</td>
                   <td className="px-6 py-4 text-slate-500">{u.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${u.role === 'admin' ? 'bg-slate-900 text-white' : 'bg-emerald-50 text-emerald-700'}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${u.role === 'admin' ? 'bg-neutral-900 text-white' : 'bg-red-50 text-red-700'}`}>
                       {u.role}
                     </span>
                   </td>

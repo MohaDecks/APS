@@ -11,11 +11,13 @@ const invoiceSchema = new mongoose.Schema(
     hourly_rate: { type: Number, required: true },
     total_fee: { type: Number, required: true },
     facility_name: { type: String, required: true },
+    facility_logo_url: { type: String },
     issued_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     payment_method_id: { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentMethod' },
     payment_method_name: { type: String },
     payment_method_icon: { type: String },
     payment_method_logo_url: { type: String },
+    payment_phone: { type: String },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: false } }
 );

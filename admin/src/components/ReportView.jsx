@@ -80,7 +80,7 @@ export default function ReportView({
                   type="date"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 />
                 <span className="text-sm text-slate-400 font-medium">to</span>
@@ -88,7 +88,7 @@ export default function ReportView({
                   type="date"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
-                  className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 />
               </div>
@@ -99,7 +99,7 @@ export default function ReportView({
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white min-w-[140px]"
+                className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-white min-w-[140px]"
               >
                 <option value="asc">Ascending</option>
                 <option value="desc">Descending</option>
@@ -167,7 +167,7 @@ export default function ReportView({
                           <td className="px-6 py-3">{d.sessions}</td>
                           <td className="px-6 py-3 text-slate-600">{formatDuration(d.duration_minutes || 0)}</td>
                           <td className="px-6 py-3 font-semibold text-slate-700">{formatBilledHours(d.billed_hours || 0)}</td>
-                          <td className="px-6 py-3 font-bold text-emerald-600">{formatETB(d.revenue)}</td>
+                          <td className="px-6 py-3 font-bold text-red-600">{formatETB(d.revenue)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-bold">
@@ -175,7 +175,7 @@ export default function ReportView({
                         <td className="px-6 py-3">{summary.total_sessions}</td>
                         <td className="px-6 py-3 text-slate-700">{formatDuration(summary.total_duration_minutes || 0)}</td>
                         <td className="px-6 py-3 text-slate-800">{formatBilledHours(summary.total_billed_hours || 0)}</td>
-                        <td className="px-6 py-3 text-emerald-600">{formatETB(summary.total_revenue)}</td>
+                        <td className="px-6 py-3 text-red-600">{formatETB(summary.total_revenue)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -225,7 +225,7 @@ function StatCard({ label, value, accent }) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-      <p className={`text-2xl font-black mt-2 tabular-nums ${accent ? 'text-emerald-600' : 'text-slate-800'}`}>{value}</p>
+      <p className={`text-2xl font-black mt-2 tabular-nums ${accent ? 'text-red-600' : 'text-slate-800'}`}>{value}</p>
     </div>
   );
 }

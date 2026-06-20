@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  RefreshControl, Platform, ScrollView,
+  RefreshControl, Platform, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,6 +16,9 @@ import {
   ErrorDialog,
 } from '../src/components/ParkingDialog';
 import { downloadReceipt } from '../src/lib/receipt';
+import { loadBranding } from '../src/lib/branding';
+import { useBranding } from '../src/hooks/useBranding';
+import { BRAND_RED, BRAND_RED_LIGHT } from '../src/lib/brand';
 
 export default function Terminal() {
   const [stats, setStats] = useState(null);
@@ -43,6 +46,7 @@ export default function Terminal() {
   const [showError, setShowError] = useState(false);
 
   const router = useRouter();
+  const branding = useBranding();
 
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +66,7 @@ export default function Terminal() {
 
   useEffect(() => {
     getUser().then(setUser);
+    loadBranding(true);
     fetchData();
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
@@ -69,7 +74,7 @@ export default function Terminal() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([fetchData(), loadBranding(true)]);
     setRefreshing(false);
   };
 
@@ -141,12 +146,13 @@ export default function Terminal() {
         payment_phone: `+251${paymentPhone}`,
       });
       await waitMinLoading();
+      const phone = paymentPhone ? `+251${paymentPhone}` : '';
       setPendingCheckOut(null);
       setCheckoutTarget(null);
       setSelectedPaymentId(null);
       setPaymentPhone('');
       setCheckoutSwipeKey((k) => k + 1);
-      setCompletedInvoice(data.invoice);
+      setCompletedInvoice({ ...data.invoice, payment_phone: data.invoice.payment_phone || phone });
       setShowCheckoutSuccess(true);
       fetchData();
     } catch (err) {
@@ -186,8 +192,9 @@ export default function Terminal() {
           invoice: completedInvoice,
         });
       }
+      // saved / shared — PNG generated and file saved; no extra step needed
     } catch {
-      setErrorMsg('Download failed');
+      setErrorMsg('Could not save receipt image. Try again.');
       setShowError(true);
     } finally {
       setDownloadingReceipt(false);
@@ -208,8 +215,13 @@ export default function Terminal() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.navBar}>
         <View style={styles.navLeft}>
-          <Text style={styles.navTitle}>Parking</Text>
-          <Text style={styles.navSub}>{user?.name || user?.email || 'Operator'}</Text>
+          {branding.logoUrl ? (
+            <Image source={{ uri: branding.logoUrl }} style={styles.navLogo} resizeMode="contain" />
+          ) : null}
+          <View style={styles.navTextCol}>
+            <Text style={styles.navTitle}>{branding.facilityName || 'Parking'}</Text>
+            <Text style={styles.navSub}>{user?.name || user?.email || 'Operator'}</Text>
+          </View>
         </View>
         <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.7}>
           <Text style={styles.signOutText}>Sign Out</Text>
@@ -244,7 +256,7 @@ export default function Terminal() {
               value={plate}
               onChangeText={setPlate}
               placeholder="AA 12345"
-              placeholderTextColor={theme.label}
+              placeholderTextColor="#c7c7cc"
               autoCapitalize="characters"
               autoCorrect={false}
               returnKeyType="done"
@@ -256,7 +268,6 @@ export default function Terminal() {
             <SwipeButton
               label="Swipe to Check In"
               hint="Slide right to confirm"
-              color={theme.dark}
               onComplete={onCheckInSwipe}
               disabled={!plate.trim() || !!checkInSheet}
               resetKey={`${swipeKey}-${plate}`}
@@ -268,7 +279,13 @@ export default function Terminal() {
 
         {sessions.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>🅿️</Text>
+            {branding.logoUrl ? (
+              <Image source={{ uri: branding.logoUrl }} style={styles.emptyLogo} resizeMode="contain" />
+            ) : (
+              <View style={styles.emptyMark}>
+                <Text style={styles.emptyMarkLetter}>D</Text>
+              </View>
+            )}
             <Text style={styles.emptyTitle}>No vehicles</Text>
             <Text style={styles.emptySub}>Check in a car to get started</Text>
           </View>
@@ -320,8 +337,9 @@ export default function Terminal() {
           <SwipeButton
             label="Swipe to Check Out"
             hint="Slide right to confirm"
-            color={theme.red}
-            completedColor="#D70015"
+            color={BRAND_RED}
+            hintColor="rgba(255,255,255,0.65)"
+            completedColor={BRAND_RED}
             onComplete={onCheckOutSwipe}
             disabled={!!pendingCheckOut}
             resetKey={`${checkoutSwipeKey}-${checkoutTarget.id}`}
@@ -391,11 +409,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.separator,
   },
-  navLeft: { flex: 1 },
-  navTitle: { fontSize: 34, fontWeight: '700', color: theme.dark, fontFamily: theme.font, letterSpacing: -0.5 },
+  navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  navLogo: { width: 52, height: 44 },
+  navTextCol: { flex: 1 },
+  navTitle: { fontSize: 20, fontWeight: '700', color: theme.dark, fontFamily: theme.font, letterSpacing: -0.3 },
   navSub: { fontSize: 15, color: theme.label, marginTop: 2, fontFamily: theme.font },
-  signOutBtn: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: theme.surface, borderRadius: 20 },
-  signOutText: { fontSize: 15, fontWeight: '600', color: theme.blue, fontFamily: theme.font },
+  signOutBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: theme.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: BRAND_RED_LIGHT,
+  },
+  signOutText: { fontSize: 15, fontWeight: '600', color: BRAND_RED, fontFamily: theme.font },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: theme.space.md, paddingBottom: 32 },
   scrollWithBar: { paddingBottom: 180 },
@@ -406,20 +433,23 @@ const styles = StyleSheet.create({
     padding: theme.space.lg,
     marginTop: theme.space.sm,
     marginBottom: theme.space.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: BRAND_RED,
   },
   heroLabel: { fontSize: 13, fontWeight: '600', color: theme.label, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: theme.font },
-  heroNumber: { fontSize: 56, fontWeight: '700', color: theme.green, marginTop: 4, fontFamily: theme.font, letterSpacing: -2 },
+  heroNumber: { fontSize: 56, fontWeight: '700', color: BRAND_RED, marginTop: 4, fontFamily: theme.font, letterSpacing: -2 },
   heroMeta: { flexDirection: 'row', gap: 10, marginTop: theme.space.md },
   chip: { flex: 1, backgroundColor: theme.bg, borderRadius: theme.radius.sm, padding: theme.space.sm },
   chipLabel: { fontSize: 12, color: theme.label, fontWeight: '500', fontFamily: theme.font },
   chipValue: { fontSize: 17, fontWeight: '600', color: theme.dark, marginTop: 4, fontFamily: theme.font },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: theme.label,
+    color: '#8e8e93',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.8,
     marginBottom: theme.space.xs,
+    marginTop: theme.space.xs,
     marginLeft: 4,
     fontFamily: theme.font,
   },
@@ -430,26 +460,27 @@ const styles = StyleSheet.create({
     marginBottom: theme.space.lg,
   },
   checkInRow: {
-    paddingVertical: 24,
+    paddingVertical: 28,
     paddingHorizontal: theme.space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.separator,
     alignItems: 'center',
   },
   checkInPlateInput: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '800',
     color: theme.dark,
     fontFamily: theme.mono,
-    letterSpacing: 4,
-    paddingVertical: 8,
+    letterSpacing: 3,
+    paddingVertical: 4,
     textAlign: 'center',
     width: '100%',
     ...webInput,
   },
   checkInSwipe: {
     paddingHorizontal: theme.space.md,
-    paddingVertical: 12,
+    paddingTop: 14,
+    paddingBottom: 16,
   },
   plateInput: {
     backgroundColor: theme.bg,
@@ -469,7 +500,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
-    marginBottom: theme.space.lg,
+    marginBottom: theme.space.md,
   },
   listRow: {
     paddingVertical: 14,
@@ -483,7 +514,7 @@ const styles = StyleSheet.create({
   listRowSelected: { backgroundColor: theme.redBg },
   listMain: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 28 },
   listPlate: { fontSize: 22, fontWeight: '700', color: theme.dark, fontFamily: theme.mono, letterSpacing: 1 },
-  listFee: { fontSize: 17, fontWeight: '600', color: theme.green, fontFamily: theme.font },
+  listFee: { fontSize: 17, fontWeight: '600', color: BRAND_RED, fontFamily: theme.font },
   listSub: { flexDirection: 'row', gap: 16, marginTop: 4, paddingRight: 28 },
   listMeta: { fontSize: 13, color: theme.label, fontFamily: theme.font },
   chevron: {
@@ -511,7 +542,17 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
   },
-  emptyEmoji: { fontSize: 40, marginBottom: 12 },
+  emptyLogo: { width: 80, height: 64, marginBottom: 16, opacity: 0.85 },
+  emptyMark: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.redBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyMarkLetter: { fontSize: 28, fontWeight: '900', color: BRAND_RED },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: theme.dark, fontFamily: theme.font },
   emptySub: { fontSize: 15, color: theme.label, marginTop: 4, fontFamily: theme.font },
   bottomSheet: {

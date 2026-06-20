@@ -1,13 +1,13 @@
 {
-  "name": "Airport Parking",
-  "short_name": "Parking",
-  "description": "Check vehicles in and out. Manage airport parking operations.",
+  "name": "Dirsh Parking",
+  "short_name": "Dirsh",
+  "description": "Check vehicles in and out. Manage parking operations.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#121212",
+  "theme_color": "#dc2626",
   "lang": "en",
   "categories": ["business", "utilities"],
   "icons": [

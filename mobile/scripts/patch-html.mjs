@@ -13,7 +13,7 @@ const injections = `
     <link rel="manifest" href="${prefix}/manifest.json" />
     <link rel="apple-touch-icon" href="${prefix}/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Parking" />
     <meta name="mobile-web-app-capable" content="yes" />
     <script>

@@ -3,10 +3,11 @@ import {
   View, Text, StyleSheet, Animated, PanResponder, Platform,
 } from 'react-native';
 import { theme } from '../lib/theme';
+import { SWIPE_TRACK, BRAND_RED, BRAND_RED_DARK } from '../lib/brand';
 
 const THUMB = 48;
-const HEIGHT = 56;
-const PAD = 4;
+const HEIGHT = 58;
+const PAD = 5;
 const isWeb = Platform.OS === 'web';
 
 export default function SwipeButton({
@@ -14,11 +15,12 @@ export default function SwipeButton({
   hint,
   onComplete,
   disabled = false,
-  color = theme.dark,
+  color = SWIPE_TRACK,
   thumbColor = '#fff',
   textColor = '#fff',
+  hintColor = 'rgba(255,255,255,0.55)',
   resetKey = 0,
-  completedColor = theme.green,
+  completedColor = BRAND_RED,
 }) {
   const [width, setWidth] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
@@ -166,7 +168,7 @@ export default function SwipeButton({
     onTouchCancel: pointerUp,
   } : {};
 
-  const bg = locked ? completedColor : disabled ? theme.separator : color;
+  const bg = locked ? completedColor : disabled ? '#e5e5ea' : color;
   const thumbTop = (HEIGHT - THUMB) / 2;
   const maxSlide = maxSlideRef.current || Math.max(0, width - THUMB - PAD * 2);
 
@@ -174,16 +176,29 @@ export default function SwipeButton({
     <View style={styles.wrap}>
       <View style={styles.container} onLayout={onLayout}>
         <View
-          style={[styles.track, { backgroundColor: bg, opacity: width > 0 ? 1 : 0 }]}
+          style={[
+            styles.track,
+            {
+              backgroundColor: bg,
+              opacity: width > 0 ? 1 : 0,
+              borderColor: disabled && !locked ? '#e5e5ea' : locked ? completedColor : BRAND_RED_DARK,
+            },
+          ]}
           {...panResponder.panHandlers}
           {...webHandlers}
         >
           <View style={styles.labelWrap} pointerEvents="none">
-            <Text style={[styles.label, { color: locked ? '#fff' : textColor, opacity: disabled && !locked ? 0.45 : 1 }]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.label,
+                { color: locked ? '#fff' : disabled ? '#aeaeb2' : textColor },
+              ]}
+              numberOfLines={1}
+            >
               {locked ? 'Confirmed' : label}
             </Text>
             {!locked && hint && !disabled && (
-              <Text style={[styles.hint, { color: textColor }]}>{hint}</Text>
+              <Text style={[styles.hint, { color: hintColor }]}>{hint}</Text>
             )}
           </View>
 
@@ -199,7 +214,7 @@ export default function SwipeButton({
                 },
               ]}
             >
-              <Text style={[styles.arrow, { color: locked ? completedColor : disabled ? theme.label : color }]}>
+              <Text style={[styles.arrow, { color: locked ? completedColor : disabled ? '#aeaeb2' : BRAND_RED }]}>
                 {locked ? '✓' : '›'}
               </Text>
             </Animated.View>
@@ -223,6 +238,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: HEIGHT,
     borderRadius: HEIGHT / 2,
+    borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',
@@ -232,18 +248,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: THUMB + 16,
+    paddingHorizontal: THUMB + 20,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     fontFamily: theme.font,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   hint: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    opacity: 0.7,
     marginTop: 2,
     fontFamily: theme.font,
   },
@@ -258,9 +274,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
-  arrow: { fontSize: 22, fontWeight: '700', marginLeft: 2 },
+  arrow: { fontSize: 24, fontWeight: '700', marginLeft: 2, lineHeight: 26 },
 });

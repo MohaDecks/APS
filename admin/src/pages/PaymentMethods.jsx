@@ -122,7 +122,7 @@ export default function PaymentMethods() {
               setShowForm(true);
             }
           }}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 shadow-sm"
+          className="flex items-center gap-2 btn-primary px-4 py-2.5 text-sm shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Add method
@@ -146,7 +146,7 @@ export default function PaymentMethods() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Ebirr, Kaafi, Coopy, NIB..."
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
                 required
               />
             </div>
@@ -156,7 +156,7 @@ export default function PaymentMethods() {
                 type="number"
                 value={form.sort_order}
                 onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div className="col-span-2">
@@ -175,7 +175,7 @@ export default function PaymentMethods() {
                 value={form.icon}
                 onChange={(e) => setForm({ ...form, icon: e.target.value })}
                 placeholder="💳 — shown if no logo"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-slate-900"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div className="flex items-end">
@@ -191,7 +191,7 @@ export default function PaymentMethods() {
               </div>
             </div>
             <div className="col-span-2 flex justify-end">
-              <button type="submit" className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">
+              <button type="submit" className="btn-primary px-6 py-2.5 text-sm">
                 {editingId ? 'Update payment method' : 'Save payment method'}
               </button>
             </div>
@@ -228,7 +228,7 @@ export default function PaymentMethods() {
                         type="button"
                         onClick={() => toggleActive(m)}
                         className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                          m.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'
+                          m.active ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-400'
                         }`}
                       >
                         {m.active ? 'Active' : 'Inactive'}

@@ -15,7 +15,7 @@ async function getSettings() {
   if (!settings) {
     settings = await Settings.create({
       hourly_rate: 50,
-      facility_name: 'Bole International Airport Parking',
+      facility_name: 'Dirsh Parking',
     });
   }
   return settings;
@@ -79,7 +79,7 @@ router.post('/check-in', operatorOnly, async (req, res) => {
 });
 
 router.post('/check-out/:id', operatorOnly, async (req, res) => {
-  const { payment_method_id } = req.body;
+  const { payment_method_id, payment_phone } = req.body;
   if (!payment_method_id) {
     return res.status(400).json({ error: 'Payment method required' });
   }
@@ -105,6 +105,9 @@ router.post('/check-out/:id', operatorOnly, async (req, res) => {
   session.payment_method_name = paymentMethod.name;
   session.payment_method_icon = paymentMethod.icon;
   session.payment_method_logo_url = paymentMethod.logo_url;
+  if (payment_phone?.trim()) {
+    session.payment_phone = payment_phone.trim();
+  }
   await session.save();
 
   const invoice = await Invoice.create({
@@ -117,11 +120,13 @@ router.post('/check-out/:id', operatorOnly, async (req, res) => {
     hourly_rate: settings.hourly_rate,
     total_fee: fee,
     facility_name: settings.facility_name,
+    facility_logo_url: settings.facility_logo_url,
     issued_by: req.user.id,
     payment_method_id: paymentMethod._id,
     payment_method_name: paymentMethod.name,
     payment_method_icon: paymentMethod.icon,
     payment_method_logo_url: paymentMethod.logo_url,
+    payment_phone: payment_phone?.trim() || undefined,
   });
 
   res.json({ session: toApi(session), invoice: toApi(invoice) });
