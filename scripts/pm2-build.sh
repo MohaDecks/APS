@@ -17,7 +17,8 @@ mkdir -p ../deploy/dist/operator
 rm -rf ../deploy/dist/operator/*
 cp -r dist/* ../deploy/dist/operator/
 
-echo ""
 echo "Static build complete:"
 echo "  Admin:    deploy/dist/admin     → port 80/443"
 echo "  Operator: deploy/dist/operator  → port 8082"
+echo "  Admin files:    $(find ../deploy/dist/admin -type f 2>/dev/null | wc -l | tr -d ' ')"
+echo "  Operator files: $(find ../deploy/dist/operator -type f 2>/dev/null | wc -l | tr -d ' ')"

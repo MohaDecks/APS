@@ -15,14 +15,24 @@ fi
 bash scripts/pm2-build.sh
 
 PM2="${PM2_CMD:-pm2}"
-$PM2 start ecosystem.config.cjs --update-env
+if $PM2 describe aps-api >/dev/null 2>&1; then
+  echo "Restarting aps-api..."
+  $PM2 restart aps-api --update-env
+else
+  echo "Starting aps-api..."
+  $PM2 start ecosystem.config.cjs --update-env
+fi
 $PM2 save
 
 echo ""
 echo "══════════════════════════════════════════"
-echo "  APS — PM2 started (aps-api)"
+echo "  APS — deploy complete"
 echo "══════════════════════════════════════════"
-echo "  pm2 list / pm2 logs aps-api"
-echo "  Static: deploy/dist/admin + deploy/dist/m"
-echo "  Nginx:  configure on server (/etc/nginx/)"
+echo "  Git:      $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+echo "  Built:    $(date '+%Y-%m-%d %H:%M:%S')"
+echo "  API:      pm2 list / pm2 logs aps-api"
+echo "  Static:   deploy/dist/admin + deploy/dist/operator"
+echo ""
+echo "  Operator PWA: hard refresh or reinstall if UI looks old"
+echo "  (service worker cache clears on each new build)"
 echo "══════════════════════════════════════════"

@@ -4,6 +4,7 @@ import {
 import { useEffect } from 'react';
 import { playSuccessSound } from '../lib/sound';
 import { resolveAssetUrl, formatETB, formatDuration } from '../lib/api';
+import { receiptActionLabel } from '../lib/receipt';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
@@ -294,7 +295,7 @@ export function CheckOutSuccessDialog({ visible, invoice, onDownload, onDone, do
         {downloading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.primaryBtnText}>Download Receipt</Text>
+          <Text style={styles.primaryBtnText}>{receiptActionLabel()}</Text>
         )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.ghostBtn} onPress={onDone}>

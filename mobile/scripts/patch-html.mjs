@@ -48,11 +48,12 @@ if (existsSync(manifestPath)) {
   console.log('manifest.json patched for base path:', p || '(root)');
 }
 
-// Fix service worker asset paths for /m/ subpath
+// Bump cache every build so deployed PWA picks up new JS
 const swPath = join(distDir, 'sw.js');
 if (existsSync(swPath)) {
   let sw = readFileSync(swPath, 'utf8');
-  sw = sw.replace(/airport-parking-v\d+(-m)?/g, `airport-parking-v3${prefix ? '-m' : ''}`);
+  const cacheName = `airport-parking-${Date.now()}`;
+  sw = sw.replace(/const CACHE_NAME = '[^']+';/, `const CACHE_NAME = '${cacheName}';`);
   if (prefix) {
     const paths = [
       '/',
@@ -68,5 +69,5 @@ if (existsSync(swPath)) {
     }
   }
   writeFileSync(swPath, sw);
-  console.log('sw.js patched for base path:', prefix || '(root)');
+  console.log('sw.js cache busted:', cacheName);
 }

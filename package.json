@@ -16,7 +16,7 @@
     "pm2:build": "bash scripts/pm2-build.sh",
     "pm2:start": "bash scripts/pm2-start.sh",
     "pm2:stop": "bash scripts/pm2-stop.sh",
-    "pm2:restart": "bash scripts/pm2-build.sh && pm2 restart aps-api"
+    "pm2:restart": "bash scripts/pm2-build.sh && PM2_CMD=\"${PM2_CMD:-pm2}\" bash -c 'if pm2 describe aps-api >/dev/null 2>&1; then pm2 restart aps-api --update-env; else pm2 start ecosystem.config.cjs --update-env; fi && pm2 save'"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
