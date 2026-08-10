@@ -9,7 +9,7 @@ const navItems = [
   { to: '/history', label: 'Departed', icon: History },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/users', label: 'Users', icon: Users },
-  { to: '/payments', label: 'Payments', icon: CreditCard },
+  { to: '/payments', label: 'Payment list', icon: CreditCard },
   { to: '/settings', label: 'Pricing', icon: Settings },
 ];
 

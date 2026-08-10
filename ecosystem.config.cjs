@@ -33,7 +33,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: env.PORT || '3001',
         MONGODB_URI: env.MONGODB_URI || 'mongodb://127.0.0.1:27017/airport_parking',
-        JWT_SECRET: env.JWT_SECRET || 'change-me-in-production',
+        JWT_SECRET: env.JWT_SECRET || 'aps-airport-parking-jwt-2024-xK9mP2vL7nQ4wR8',
       },
     },
   ],

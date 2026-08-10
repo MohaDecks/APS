@@ -1,49 +1,100 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, CreditCard, Pencil, X } from 'lucide-react';
+import { Plus, Trash2, CreditCard, Pencil, X, ImagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import PageHeader from '../components/PageHeader';
+import { canUpdatePayments } from '../lib/auth';
 
-function MethodIcon({ method, size = 'w-10 h-10' }) {
-  if (method.logo_url) {
-    return (
-      <img
-        src={method.logo_url}
-        alt={method.name}
-        className={`${size} rounded-xl object-contain bg-slate-100 border border-slate-100`}
-      />
-    );
-  }
-  return (
-    <span className={`inline-flex ${size} items-center justify-center rounded-xl bg-slate-100 text-lg font-bold`}>
-      {method.icon || '💳'}
-    </span>
-  );
-}
+const COUNTRIES = ['Ethiopia', 'Somalia', 'Kenya', 'Djibouti', 'Other'];
+
+const emptyForm = {
+  name: '',
+  country: 'Ethiopia',
+  city_name: '',
+  merchantUid: '',
+  apiKey: '',
+  apiUserId: '',
+  prefix: '',
+  merchant_prefix: '',
+  is_visible: 1,
+  is_ussd: 0,
+  status: 1,
+  icon: '💳',
+  sort_order: 0,
+};
+
+const inputCls =
+  'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
 
 export default function PaymentMethods() {
-  const [methods, setMethods] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', icon: '💳', sort_order: 0 });
+  const canEdit = canUpdatePayments();
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyForm);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const fetchMethods = () => {
+  const fetchList = () => {
+    setLoading(true);
     api.get('/payment-methods')
-      .then(({ data }) => setMethods(data))
-      .catch(() => toast.error('Failed to load payment methods'));
+      .then(({ data }) => setList(data))
+      .catch(() => toast.error('Failed to load payment methods'))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchMethods(); }, []);
+  useEffect(() => { fetchList(); }, []);
 
-  const resetForm = () => {
-    setForm({ name: '', icon: '💳', sort_order: 0 });
+  const openCreate = () => {
+    if (!canEdit) {
+      toast.error('No permission to update payments');
+      return;
+    }
+    setEditing(null);
+    setForm(emptyForm);
     setLogoFile(null);
     setLogoPreview(null);
-    setEditingId(null);
-    setShowForm(false);
+    setOpen(true);
   };
+
+  const openEdit = (item) => {
+    if (!canEdit) {
+      toast.error('No permission to update payments');
+      return;
+    }
+    setEditing(item);
+    setForm({
+      name: item.name || '',
+      country: item.country || 'Ethiopia',
+      city_name: item.city_name || '',
+      merchantUid: item.merchantUid || '',
+      apiKey: item.apiKey || '',
+      apiUserId: item.apiUserId || '',
+      prefix: item.prefix || '',
+      merchant_prefix: item.merchant_prefix || '',
+      is_visible: item.is_visible ?? 1,
+      is_ussd: item.is_ussd ?? 0,
+      status: item.status ?? (item.active ? 1 : 0),
+      icon: item.icon || '💳',
+      sort_order: item.sort_order || 0,
+    });
+    setLogoFile(null);
+    setLogoPreview(item.logo_url || item.image_url?.[0] || null);
+    setOpen(true);
+  };
+
+  const closeModal = () => {
+    setOpen(false);
+    setEditing(null);
+    setForm(emptyForm);
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const setToggle = (key) => setForm((f) => ({ ...f, [key]: f[key] ? 0 : 1 }));
 
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
@@ -54,54 +105,60 @@ export default function PaymentMethods() {
     }
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
+    e.target.value = '';
   };
 
-  const startEdit = (method) => {
-    setEditingId(method.id);
-    setForm({ name: method.name, icon: method.icon || '💳', sort_order: method.sort_order || 0 });
-    setLogoFile(null);
-    setLogoPreview(method.logo_url || null);
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    if (!form.name.trim()) {
+      toast.error('Payment method name is required');
+      return;
+    }
+    setSaving(true);
     try {
       const fd = new FormData();
-      fd.append('name', form.name);
-      fd.append('icon', form.icon);
-      fd.append('sort_order', form.sort_order);
+      fd.append('name', form.name.trim());
+      fd.append('country', form.country);
+      fd.append('city_name', form.city_name);
+      fd.append('merchantUid', form.merchantUid);
+      fd.append('apiKey', form.apiKey);
+      fd.append('apiUserId', form.apiUserId);
+      fd.append('prefix', form.prefix);
+      fd.append('merchant_prefix', form.merchant_prefix);
+      fd.append('is_visible', String(form.is_visible));
+      fd.append('is_ussd', String(form.is_ussd));
+      fd.append('status', String(form.status));
+      fd.append('active', form.status ? 'true' : 'false');
+      fd.append('icon', form.icon || '💳');
+      fd.append('sort_order', String(form.sort_order || 0));
       if (logoFile) fd.append('logo', logoFile);
 
-      if (editingId) {
-        await api.put(`/payment-methods/${editingId}`, fd);
+      if (editing) {
+        await api.put(`/payment-methods/${editing.id}`, fd);
         toast.success('Payment method updated');
       } else {
         await api.post('/payment-methods', fd);
         toast.success('Payment method added');
       }
-      resetForm();
-      fetchMethods();
+      closeModal();
+      fetchList();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const toggleActive = async (method) => {
-    try {
-      await api.put(`/payment-methods/${method.id}`, { active: !method.active });
-      fetchMethods();
-    } catch {
-      toast.error('Update failed');
+  const handleDelete = async (item) => {
+    if (!canEdit) {
+      toast.error('No permission to update payments');
+      return;
     }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this payment method?')) return;
+    if (!confirm(`Delete payment method "${item.name}"?`)) return;
     try {
-      await api.delete(`/payment-methods/${id}`);
+      await api.delete(`/payment-methods/${item.id}`);
       toast.success('Deleted');
-      fetchMethods();
+      fetchList();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Delete failed');
     }
@@ -110,147 +167,230 @@ export default function PaymentMethods() {
   return (
     <div className="min-h-full bg-slate-50/80">
       <PageHeader
-        badge="Settings"
-        title="Payment Methods"
-        subtitle="Manage how operators collect parking fees — Ebirr, Kaafi, Coopy, NIB, etc."
+        badge="Finance"
+        title="Payment list"
+        subtitle={canEdit ? 'Register payment options — API key, merchant & user ID' : 'View only — you cannot edit payments'}
       >
-        <button
-          onClick={() => {
-            if (showForm && !editingId) setShowForm(false);
-            else {
-              resetForm();
-              setShowForm(true);
-            }
-          }}
-          className="flex items-center gap-2 btn-primary px-4 py-2.5 text-sm shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add method
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-2 btn-primary px-4 py-2.5 text-sm shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Payment Method
+          </button>
+        )}
       </PageHeader>
 
-      <div className="p-8 max-w-4xl">
-        {showForm && (
-          <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 mb-6 grid grid-cols-2 gap-4 shadow-sm">
-            <div className="col-span-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">
-                {editingId ? 'Edit payment method' : 'New payment method'}
-              </h3>
-              <button type="button" onClick={resetForm} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
+      <div className="p-8 max-w-6xl">
+        {loading ? (
+          <p className="text-slate-400">Loading...</p>
+        ) : list.length === 0 ? (
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-16 text-center">
+            <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600 font-semibold">No payment methods yet</p>
+            <p className="text-slate-400 text-sm mt-1">
+              {canEdit ? 'Add EBIRR, Kaafi, or other gateway credentials' : 'Ask an admin with payment permission to add methods'}
+            </p>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={openCreate}
+                className="mt-6 inline-flex items-center gap-2 btn-primary px-5 py-2.5 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Payment Method
               </button>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Name</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ebirr, Kaafi, Coopy, NIB..."
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Sort order</label>
-              <input
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Logo image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoChange}
-                className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
-              />
-              <p className="text-xs text-slate-400 mt-1.5">PNG, JPG, WebP or SVG — max 2 MB</p>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fallback icon</label>
-              <input
-                value={form.icon}
-                onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                placeholder="💳 — shown if no logo"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div className="flex items-end">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="Preview" className="w-full h-full object-contain" />
-                  ) : (
-                    <span className="text-xl">{form.icon || '💳'}</span>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {list.map((item) => {
+              const img = item.logo_url || item.image_url?.[0];
+              const active = item.status ?? item.active;
+              return (
+                <div key={item.id} className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+                    {img ? (
+                      <img src={img} alt="" className="w-12 h-12 rounded-xl object-contain bg-slate-50 border border-slate-100" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-lg">
+                        {item.icon || <CreditCard className="w-5 h-5 text-slate-400" />}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-900 truncate">{item.name}</p>
+                      <p className="text-xs text-slate-400">{item.country}{item.city_name ? ` · ${item.city_name}` : ''}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
+                      active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {active ? 'Active' : 'Off'}
+                    </span>
+                  </div>
+                  <div className="px-5 py-3 space-y-1.5 text-xs">
+                    <Row label="Merchant UID" value={item.merchantUid} mono />
+                    <Row label="API User ID" value={item.apiUserId} mono />
+                    <Row label="API Key" value={mask(item.apiKey)} mono />
+                    <Row label="Prefix" value={item.prefix} mono />
+                  </div>
+                  <div className="px-5 pb-3 flex flex-wrap gap-1.5">
+                    {item.is_visible ? <Badge>Visible</Badge> : null}
+                    {item.is_ussd ? <Badge>USSD</Badge> : null}
+                  </div>
+                  {canEdit && (
+                    <div className="px-5 py-3 border-t border-slate-100 flex justify-end gap-2">
+                      <button type="button" onClick={() => openEdit(item)} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item)} className="p-2 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">Active methods appear on the operator checkout screen.</p>
-              </div>
-            </div>
-            <div className="col-span-2 flex justify-end">
-              <button type="submit" className="btn-primary px-6 py-2.5 text-sm">
-                {editingId ? 'Update payment method' : 'Save payment method'}
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-lg font-bold text-slate-900">
+                {editing ? 'Edit Payment Method' : 'Add Payment Method'}
+              </h2>
+              <button type="button" onClick={closeModal} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </form>
-        )}
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-          {methods.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
-              <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>No payment methods yet. Add Ebirr, Kaafi, Coopy, NIB...</p>
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left text-[10px] text-slate-400 uppercase font-bold tracking-wider bg-slate-50/50">
-                  <th className="px-6 py-3">Logo</th>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Order</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {methods.map((m) => (
-                  <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                    <td className="px-6 py-4">
-                      <MethodIcon method={m} />
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-slate-800">{m.name}</td>
-                    <td className="px-6 py-4 text-slate-400">{m.sort_order}</td>
-                    <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() => toggleActive(m)}
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                          m.active ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-400'
-                        }`}
-                      >
-                        {m.active ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => startEdit(m)} className="text-slate-300 hover:text-slate-600 transition-colors">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(m.id)} className="text-slate-300 hover:text-red-500 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+            <form onSubmit={handleSave} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Payment Method *">
+                  <input value={form.name} onChange={(e) => setField('name', e.target.value)} className={inputCls} required />
+                </Field>
+                <Field label="Country *">
+                  <select value={form.country} onChange={(e) => setField('country', e.target.value)} className={inputCls}>
+                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="City Name">
+                  <input value={form.city_name} onChange={(e) => setField('city_name', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Merchant UID">
+                  <input value={form.merchantUid} onChange={(e) => setField('merchantUid', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="API Key">
+                  <input value={form.apiKey} onChange={(e) => setField('apiKey', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="API User ID">
+                  <input value={form.apiUserId} onChange={(e) => setField('apiUserId', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Prefix">
+                  <input value={form.prefix} onChange={(e) => setField('prefix', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Merchant Prefix">
+                  <input value={form.merchant_prefix} onChange={(e) => setField('merchant_prefix', e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Sort order">
+                  <input type="number" value={form.sort_order} onChange={(e) => setField('sort_order', Number(e.target.value))} className={inputCls} />
+                </Field>
+                <Field label="Fallback icon">
+                  <input value={form.icon} onChange={(e) => setField('icon', e.target.value)} className={inputCls} />
+                </Field>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Logo</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-2xl">{form.icon || '💳'}</span>
+                    )}
+                  </div>
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+                    <ImagePlus className="w-4 h-4" />
+                    Choose image
+                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                <Toggle label="Visible" on={!!form.is_visible} onChange={() => setToggle('is_visible')} />
+                <Toggle label="USSD" on={!!form.is_ussd} onChange={() => setToggle('is_ussd')} />
+                <Toggle label="Active" on={!!form.status} onChange={() => setToggle('status')} />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving} className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50">
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Toggle({ label, on, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/80"
+    >
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className={`relative w-10 h-6 rounded-full transition-colors ${on ? 'bg-red-500' : 'bg-slate-300'}`}>
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+            on ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function Row({ label, value, mono }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-slate-400">{label}</span>
+      <span className={`text-slate-700 truncate max-w-[60%] ${mono ? 'font-mono' : ''}`}>{value || '—'}</span>
+    </div>
+  );
+}
+
+function Badge({ children }) {
+  return (
+    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+      {children}
+    </span>
+  );
+}
+
+function mask(s) {
+  if (!s) return '';
+  if (s.length <= 6) return '••••';
+  return `${s.slice(0, 4)}••••${s.slice(-3)}`;
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import Settings from '../models/Settings.js';
-import { authMiddleware, adminOnly } from '../middleware/auth.js';
+import { authMiddleware, adminOnly, canUpdatePrice } from '../middleware/auth.js';
 import { toApi } from '../utils/format.js';
 import {
   facilityLogoUpload,
@@ -49,6 +49,7 @@ router.put(
   '/',
   authMiddleware,
   adminOnly,
+  canUpdatePrice,
   (req, res, next) => {
     if (!req.is('multipart/form-data')) return next();
     return runSingleUpload(facilityLogoUpload, 'logo')(req, res, next);

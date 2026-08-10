@@ -4,8 +4,10 @@ import toast from 'react-hot-toast';
 import api, { formatETB } from '../lib/api';
 import PageHeader from '../components/PageHeader';
 import { useBranding } from '../lib/branding';
+import { canUpdatePrice } from '../lib/auth';
 
 export default function Settings() {
+  const canEdit = canUpdatePrice();
   const { refreshBranding } = useBranding();
   const [hourlyRate, setHourlyRate] = useState('');
   const [facilityName, setFacilityName] = useState('');
@@ -34,6 +36,10 @@ export default function Settings() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!canEdit) {
+      toast.error('No permission to update pricing');
+      return;
+    }
     setLoading(true);
     try {
       const fd = new FormData();
@@ -60,7 +66,7 @@ export default function Settings() {
       <PageHeader
         badge="Configuration"
         title="Parking Pricing"
-        subtitle="Set hourly rate, facility name, and receipt logo"
+        subtitle={canEdit ? 'Set hourly rate, facility name, and receipt logo' : 'View only — you cannot change pricing'}
       />
 
       <div className="p-8 max-w-2xl">
@@ -78,7 +84,8 @@ export default function Settings() {
                 min="0"
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
-                className="w-40 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                disabled={!canEdit}
+                className="w-40 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
               <span className="text-sm text-slate-400">ETB / hour</span>
             </div>
@@ -96,7 +103,8 @@ export default function Settings() {
               type="text"
               value={facilityName}
               onChange={(e) => setFacilityName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-5"
+              disabled={!canEdit}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-5 disabled:bg-slate-50 disabled:text-slate-500"
             />
 
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Receipt logo</label>
@@ -109,27 +117,31 @@ export default function Settings() {
                   <ImagePlus className="w-8 h-8 text-slate-300" />
                 )}
               </div>
-              <div>
-                <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
-                  <ImagePlus className="w-4 h-4" />
-                  Choose image
-                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-                </label>
-                <p className="text-xs text-slate-400 mt-2">Max 5 MB. PNG or JPG recommended.</p>
-              </div>
+              {canEdit && (
+                <div>
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+                    <ImagePlus className="w-4 h-4" />
+                    Choose image
+                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                  </label>
+                  <p className="text-xs text-slate-400 mt-2">Max 5 MB. PNG or JPG recommended.</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 btn-primary px-6 py-2.5 text-sm"
-            >
-              <Save className="w-4 h-4" />
-              Save settings
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 btn-primary px-6 py-2.5 text-sm"
+              >
+                <Save className="w-4 h-4" />
+                Save settings
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

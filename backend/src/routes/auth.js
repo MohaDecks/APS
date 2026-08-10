@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
-import { signToken, authMiddleware } from '../middleware/auth.js';
+import { signToken, authMiddleware, publicUser } from '../middleware/auth.js';
 import { toApi } from '../utils/format.js';
 
 const router = Router();
@@ -25,17 +25,18 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
   const token = signToken(user);
-  const apiUser = toApi(user);
   res.json({
     token,
-    user: { id: apiUser.id, email: apiUser.email, name: apiUser.name, role: apiUser.role },
+    user: publicUser(user),
   });
 });
 
 router.get('/me', authMiddleware, async (req, res) => {
-  const user = await User.findById(req.user.id).select('email name role created_at');
+  const user = await User.findById(req.user.id).select(
+    'email name role can_update_payments can_update_price created_at'
+  );
   if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json(toApi(user));
+  res.json({ ...toApi(user), ...publicUser(user) });
 });
 
 export default router;

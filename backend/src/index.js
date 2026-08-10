@@ -1,3 +1,4 @@
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -11,13 +12,30 @@ import invoicesRoutes from './routes/invoices.js';
 import reportsRoutes from './routes/reports.js';
 import paymentMethodsRoutes from './routes/paymentMethods.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load backend/.env (PM2 also injects these via ecosystem.config.cjs)
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  for (const line of fs.readFileSync(filePath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) continue;
+    const key = trimmed.slice(0, idx).trim();
+    const val = trimmed.slice(idx + 1).trim();
+    if (!(key in process.env)) process.env[key] = val;
+  }
+}
+loadEnvFile(path.join(__dirname, '../.env'));
+loadEnvFile(path.join(__dirname, '../../.env'));
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '12mb' }));
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use('/api/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -40,6 +58,24 @@ app.use((err, req, res, next) => {
 });
 
 await connectDB();
+
+// Bootstrap: if no admin has payment/price flags yet, grant all admins both
+try {
+  const { default: User } = await import('./models/User.js');
+  const hasPaymentsAdmin = await User.exists({ role: 'admin', can_update_payments: true });
+  const hasPriceAdmin = await User.exists({ role: 'admin', can_update_price: true });
+  if (!hasPaymentsAdmin || !hasPriceAdmin) {
+    const update = {};
+    if (!hasPaymentsAdmin) update.can_update_payments = true;
+    if (!hasPriceAdmin) update.can_update_price = true;
+    const result = await User.updateMany({ role: 'admin' }, { $set: update });
+    if (result.modifiedCount) {
+      console.log(`Granted admin permissions to ${result.modifiedCount} admin(s)`);
+    }
+  }
+} catch (e) {
+  console.warn('Permission bootstrap skipped:', e.message);
+}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Airport Parking API running on http://0.0.0.0:${PORT}`);
