@@ -15,13 +15,23 @@ fi
 bash scripts/pm2-build.sh
 
 PM2="${PM2_CMD:-pm2}"
-if $PM2 describe aps-api >/dev/null 2>&1; then
-  echo "Restarting aps-api..."
-  $PM2 restart aps-api --update-env
-else
-  echo "Starting aps-api..."
-  $PM2 start ecosystem.config.cjs --update-env
+PORT="${PORT:-3001}"
+if [ -f .env ]; then
+  env_port="$(awk -F= '/^PORT=/{print $2; exit}' .env | tr -d '[:space:]')"
+  [ -n "$env_port" ] && PORT="$env_port"
 fi
+
+echo "Stopping old aps-api (cluster duplicates included)..."
+$PM2 stop aps-api >/dev/null 2>&1 || true
+$PM2 delete aps-api >/dev/null 2>&1 || true
+sleep 1
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k "${PORT}/tcp" >/dev/null 2>&1 || true
+fi
+sleep 1
+
+echo "Starting aps-api (fork, 1 instance) on :${PORT}..."
+$PM2 start ecosystem.config.cjs --update-env --only aps-api
 $PM2 save
 
 echo ""
