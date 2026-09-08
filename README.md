@@ -212,9 +212,9 @@ Server-ka: **PM2** backend, **Nginx** admin + operator static files.
 
 | Wax | URL |
 |-----|-----|
-| **Operator app (PWA)** | https://app.bildhaan.dirshay.com |
+| **Operator app (PWA)** | http://app.bildhaan.dirshay.com:8082 |
 | **Admin** | https://bildhaan.admin.dirshay.com |
-| **API** | https://app.bildhaan.dirshay.com/api/health |
+| **API** | `PORT=3001` (nginx `/api` → PM2) |
 
 ### 1. `.env` server-ka (`/var/www/html/APS/.env`)
 
@@ -222,6 +222,8 @@ Server-ka: **PM2** backend, **Nginx** admin + operator static files.
 JWT_SECRET=password-random-ah-oo-dheer
 MONGODB_URI=mongodb://127.0.0.1:27017/airport_parking
 PORT=3001
+ADMIN_PORT=80
+APP_PORT=8082
 ```
 
 ### 2. Build + PM2
@@ -249,8 +251,9 @@ sudo cp deploy/nginx/app.bildhaan.dirshay.com.conf /etc/nginx/sites-available/
 sudo cp deploy/nginx/bildhaan.admin.dirshay.com.conf /etc/nginx/sites-available/
 sudo ln -sf /etc/nginx/sites-available/app.bildhaan.dirshay.com.conf /etc/nginx/sites-enabled/
 sudo ln -sf /etc/nginx/sites-available/bildhaan.admin.dirshay.com.conf /etc/nginx/sites-enabled/
+sudo ufw allow 8082/tcp
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d app.bildhaan.dirshay.com -d bildhaan.admin.dirshay.com
+sudo certbot --nginx -d bildhaan.admin.dirshay.com
 ```
 
 ### 4. URLs
@@ -258,8 +261,8 @@ sudo certbot --nginx -d app.bildhaan.dirshay.com -d bildhaan.admin.dirshay.com
 | Wax | URL | Login |
 |-----|-----|-------|
 | **Admin** | https://bildhaan.admin.dirshay.com/login | `admin@parking.com` |
-| **Operator** | https://app.bildhaan.dirshay.com/login | `operator@parking.com` |
-| **API** | https://app.bildhaan.dirshay.com/api/health | — |
+| **Operator** | http://app.bildhaan.dirshay.com:8082/login | `operator@parking.com` |
+| **API** | http://app.bildhaan.dirshay.com:8082/api/health | — |
 
 App-ka (Chrome/Android) → banner **Install**, ama menu → **Install app**. iPhone: Share → **Add to Home Screen**.
 
@@ -287,7 +290,7 @@ npm run pm2:stop
 ### Architecture
 
 ```
-Admin     → https://bildhaan.admin.dirshay.com  → deploy/dist/admin
-Operator  → https://app.bildhaan.dirshay.com    → deploy/dist/operator
-API       → /api/ on both                      → PM2 aps-api (:3001) → MongoDB
+Admin     → bildhaan.admin.dirshay.com   (:80/443) → deploy/dist/admin
+Operator  → app.bildhaan.dirshay.com     (:8082)   → deploy/dist/operator
+API       → /api/ on both                          → PM2 aps-api (:3001) → MongoDB
 ```

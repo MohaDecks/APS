@@ -18,7 +18,7 @@ rm -rf ../deploy/dist/operator/*
 cp -r dist/* ../deploy/dist/operator/
 
 echo "Static build complete:"
-echo "  Admin:    deploy/dist/admin     → https://bildhaan.admin.dirshay.com"
-echo "  Operator: deploy/dist/operator  → https://app.bildhaan.dirshay.com"
+echo "  Admin:    deploy/dist/admin     → :80 / :443"
+echo "  Operator: deploy/dist/operator  → :8082"
 echo "  Admin files:    $(find ../deploy/dist/admin -type f 2>/dev/null | wc -l | tr -d ' ')"
 echo "  Operator files: $(find ../deploy/dist/operator -type f 2>/dev/null | wc -l | tr -d ' ')"

@@ -11,5 +11,5 @@ PM2_CMD="${PM2_CMD:-pm2}" bash scripts/pm2-start.sh
 
 echo ""
 echo "  Configure Nginx from deploy/nginx/ on the server"
-echo "  App:   https://app.bildhaan.dirshay.com"
+echo "  App:   http://app.bildhaan.dirshay.com:8082"
 echo "  Admin: https://bildhaan.admin.dirshay.com"
