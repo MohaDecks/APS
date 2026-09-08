@@ -93,7 +93,9 @@ Scan QR code with Expo Go, ama run on Android emulator.
 
 ## PWA — Web Installable App
 
-Mobile app-ka waxaa sidoo kale loo isticmaali karaa **browser** oo la **install** gareyn karo (Android, iPhone, Desktop).
+Mobile app-ka waxaa loo isticmaali karaa **browser** oo la **install** gareyn karo (Android, iPhone, Desktop).
+
+Production: **https://app.bildhaan.dirshay.com** (HTTPS waa qasab si install u shaqeeyo).
 
 ### Development (browser)
 
@@ -129,7 +131,7 @@ Output: `mobile/dist/` — deploy to any static host (Netlify, Vercel, Nginx).
 
 ### API URL (Web)
 
-Web-ka API wuxuu automatic u isticmaalaa `http://<hostname>:3001`. Hubi backend inuu socdo.
+Web-ka API wuxuu automatic u isticmaalaa isla origin-ka (production: `https://app.bildhaan.dirshay.com`). Hubi backend inuu socdo.
 
 ## Mobile App — APK Build
 
@@ -204,9 +206,15 @@ Lacagta waxaa loo xisaabiyaa saacad kasta oo la bilaabay:
 
 Admin wuxuu beddeli karaa qiimaha saacaddii Settings → Hourly rate.
 
-## Server Deploy (PM2 + Nginx — manual)
+## Server Deploy (PM2 + Nginx — HTTPS subdomains)
 
-Server-ka: **PM2** backend, **Nginx** admin + mobile static files. Nginx config ku qor **`/etc/nginx/`** toos — ma jirto Docker.
+Server-ka: **PM2** backend, **Nginx** admin + operator static files.
+
+| Wax | URL |
+|-----|-----|
+| **Operator app (PWA)** | https://app.bildhaan.dirshay.com |
+| **Admin** | https://bildhaan.admin.dirshay.com |
+| **API** | https://app.bildhaan.dirshay.com/api/health |
 
 ### 1. `.env` server-ka (`/var/www/html/APS/.env`)
 
@@ -228,75 +236,32 @@ sudo pm2 list
 
 Waa in aad aragto **`aps-api`**.
 
-### 3. Nginx — laba port (admin vs operator)
+### 3. Nginx + HTTPS
 
-**Muhiim:** Admin iyo Operator **kala saar** — hal browser labadood isku ma wada isticmaalin (token conflict).
+DNS: laba **A** record → server IP:
 
-#### A) Admin — port 80/443 (`/etc/nginx/sites-available/parking.dirshay.com`)
-
-```nginx
-server {
-    listen 80;
-    server_name parking.dirshay.com;
-    client_max_body_size 10m;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location / {
-        root /var/www/html/APS/deploy/dist/admin;
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
-
-#### B) Operator — port 8082 (`/etc/nginx/sites-available/parking-operator.conf`)
-
-```nginx
-server {
-    listen 8082;
-    server_name parking.dirshay.com;
-    client_max_body_size 10m;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location / {
-        root /var/www/html/APS/deploy/dist/operator;
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
+- `app.bildhaan.dirshay.com`
+- `bildhaan.admin.dirshay.com`
 
 ```bash
-sudo ln -sf /etc/nginx/sites-available/parking.dirshay.com /etc/nginx/sites-enabled/
-sudo ln -sf /etc/nginx/sites-available/parking-operator.conf /etc/nginx/sites-enabled/
-sudo ufw allow 8082/tcp
+cd /var/www/html/APS
+sudo cp deploy/nginx/app.bildhaan.dirshay.com.conf /etc/nginx/sites-available/
+sudo cp deploy/nginx/bildhaan.admin.dirshay.com.conf /etc/nginx/sites-available/
+sudo ln -sf /etc/nginx/sites-available/app.bildhaan.dirshay.com.conf /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/bildhaan.admin.dirshay.com.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d parking.dirshay.com
+sudo certbot --nginx -d app.bildhaan.dirshay.com -d bildhaan.admin.dirshay.com
 ```
 
 ### 4. URLs
 
 | Wax | URL | Login |
 |-----|-----|-------|
-| **Admin** | https://parking.dirshay.com/login | `admin@parking.com` |
-| **Operator** | http://parking.dirshay.com:8082/login | `operator@parking.com` |
-| **API** | https://parking.dirshay.com/api/health | — |
+| **Admin** | https://bildhaan.admin.dirshay.com/login | `admin@parking.com` |
+| **Operator** | https://app.bildhaan.dirshay.com/login | `operator@parking.com` |
+| **API** | https://app.bildhaan.dirshay.com/api/health | — |
 
-DNS: **A** record `parking` → server IP.
+App-ka (Chrome/Android) → banner **Install**, ama menu → **Install app**. iPhone: Share → **Add to Home Screen**.
 
 Default login (haddii users DB-ga ku jiraan):
 - Admin: `admin@parking.com` / `admin123`
@@ -322,7 +287,7 @@ npm run pm2:stop
 ### Architecture
 
 ```
-Admin     → parking.dirshay.com      (:443) → deploy/dist/admin
-Operator  → parking.dirshay.com      (:8082) → deploy/dist/operator
-API       → /api/ on both              → PM2 aps-api (:3001) → MongoDB
+Admin     → https://bildhaan.admin.dirshay.com  → deploy/dist/admin
+Operator  → https://app.bildhaan.dirshay.com    → deploy/dist/operator
+API       → /api/ on both                      → PM2 aps-api (:3001) → MongoDB
 ```

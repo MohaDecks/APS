@@ -1,14 +1,17 @@
 {
+  "id": "/",
   "name": "Dirsh Parking",
-  "short_name": "Dirsh",
+  "short_name": "Parking",
   "description": "Check vehicles in and out. Manage parking operations.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#121212",
-  "theme_color": "#dc2626",
+  "theme_color": "#B80611",
   "lang": "en",
+  "dir": "ltr",
   "categories": ["business", "utilities"],
   "icons": [
     {
@@ -30,6 +33,5 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false
 }

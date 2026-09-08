@@ -10,11 +10,11 @@ export default function Root({ children }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#F2F2F7" />
+        <meta name="theme-color" content="#B80611" />
         <meta name="description" content="Check vehicles in and out. Manage airport parking operations." />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Parking" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.png" />
@@ -73,7 +73,7 @@ const responsiveCss = `
 const swRegister = `
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(() => {});
     });
   }
 `;

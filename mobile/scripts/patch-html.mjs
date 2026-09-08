@@ -8,6 +8,7 @@ const htmlPath = join(distDir, 'index.html');
 
 const base = (process.env.EXPO_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
 const prefix = base || '';
+const swScope = prefix ? `${prefix}/` : '/';
 
 const injections = `
     <link rel="manifest" href="${prefix}/manifest.json" />
@@ -16,9 +17,10 @@ const injections = `
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Parking" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#B80611" />
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('${prefix}/sw.js').catch(() => {}));
+        window.addEventListener('load', () => navigator.serviceWorker.register('${prefix}/sw.js', { scope: '${swScope}', updateViaCache: 'none' }).catch(() => {}));
       }
     </script>`;
 

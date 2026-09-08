@@ -28,7 +28,7 @@ export default {
       name: 'Dirsh Parking',
       shortName: 'Parking',
       description: 'Check vehicles in and out. Manage airport parking operations.',
-      themeColor: '#dc2626',
+      themeColor: '#B80611',
       backgroundColor: '#121212',
       display: 'standalone',
       startUrl: '/',

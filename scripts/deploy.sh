@@ -10,6 +10,6 @@ fi
 PM2_CMD="${PM2_CMD:-pm2}" bash scripts/pm2-start.sh
 
 echo ""
-echo "  Configure Nginx manually on the server (/etc/nginx/sites-available/)"
-echo "  Admin:    https://parking.dirshay.com/login"
-echo "  Operator: http://parking.dirshay.com:8082/login"
+echo "  Configure Nginx from deploy/nginx/ on the server"
+echo "  App:   https://app.bildhaan.dirshay.com"
+echo "  Admin: https://bildhaan.admin.dirshay.com"

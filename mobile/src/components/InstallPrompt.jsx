@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useBranding } from '../hooks/useBranding';
 
+function isStandalone() {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true
+  );
+}
+
 export default function InstallPrompt() {
   const branding = useBranding();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -11,30 +20,46 @@ export default function InstallPrompt() {
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
-
-    if (isStandalone) return;
+    if (isStandalone()) return;
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     setIsIOS(ios);
 
-    if (ios) {
-      const dismissedBefore = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissedBefore) setVisible(true);
+    const dismissedBefore = localStorage.getItem('pwa-install-dismissed');
+    if (dismissedBefore) {
+      setDismissed(true);
       return;
     }
 
-    const handler = (e) => {
+    if (ios) {
+      setVisible(true);
+      return;
+    }
+
+    const onPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setVisible(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    const onInstalled = () => {
+      setVisible(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+
+    // Fallback: still show a banner so users can install from the browser menu
+    const timer = setTimeout(() => {
+      if (!isStandalone()) setVisible(true);
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -55,16 +80,20 @@ export default function InstallPrompt() {
 
   if (Platform.OS !== 'web' || !visible || dismissed) return null;
 
+  const name = branding.facilityName || 'Dirsh Parking';
+
   return (
     <View style={styles.banner}>
       <View style={styles.content}>
         <Text style={styles.emoji}>📲</Text>
         <View style={styles.textWrap}>
-          <Text style={styles.title}>Install {branding.facilityName || 'Dirsh Parking'}</Text>
+          <Text style={styles.title}>Install {name}</Text>
           <Text style={styles.subtitle}>
             {isIOS
               ? 'Tap Share → Add to Home Screen'
-              : 'Add to your home screen for quick access'}
+              : deferredPrompt
+                ? 'Add to your home screen for quick access'
+                : 'Browser menu → Install app / Add to Home screen'}
           </Text>
         </View>
       </View>
@@ -101,7 +130,7 @@ const styles = StyleSheet.create({
   subtitle: { color: '#aaa', fontSize: 12, marginTop: 2 },
   actions: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
   installBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#B80611',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,

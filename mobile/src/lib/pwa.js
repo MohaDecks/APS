@@ -1,4 +1,4 @@
-/** Web base path: '' on operator port; '/m' only for legacy paths. */
+/** Web base path: root on the operator domain; '/m' only for legacy paths. */
 export function getWebBasePath() {
   if (typeof window === 'undefined') return '';
   const { pathname, port } = window.location;
@@ -12,21 +12,24 @@ export function registerServiceWorker() {
 
   const base = getWebBasePath();
   const swUrl = `${base}/sw.js`;
+  const scope = base ? `${base}/` : '/';
 
   window.addEventListener('load', async () => {
     try {
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const reg of regs) {
         const scopePath = new URL(reg.scope).pathname;
-        const wantScope = base ? `${base}/` : '/';
-        if (scopePath !== wantScope && scopePath === '/') {
+        if (scopePath !== scope && scopePath === '/') {
           await reg.unregister();
         }
       }
     } catch {
       /* ignore */
     }
-    navigator.serviceWorker.register(swUrl).catch(() => {});
+    navigator.serviceWorker
+      .register(swUrl, { scope, updateViaCache: 'none' })
+      .then((reg) => reg.update())
+      .catch(() => {});
   });
 }
 
@@ -51,17 +54,21 @@ export function ensurePwaMeta() {
 
   const metas = [
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
-    { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
     { name: 'apple-mobile-web-app-title', content: 'Parking' },
     { name: 'mobile-web-app-capable', content: 'yes' },
+    { name: 'theme-color', content: '#B80611' },
   ];
 
   metas.forEach(({ name, content }) => {
-    if (!document.querySelector(`meta[name="${name}"]`)) {
-      const meta = document.createElement('meta');
-      meta.name = name;
-      meta.content = content;
-      document.head.appendChild(meta);
+    const existing = document.querySelector(`meta[name="${name}"]`);
+    if (existing) {
+      existing.setAttribute('content', content);
+      return;
     }
+    const meta = document.createElement('meta');
+    meta.name = name;
+    meta.content = content;
+    document.head.appendChild(meta);
   });
 }
