@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  RefreshControl, Platform, ScrollView, Image,
+  RefreshControl, Platform, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,7 +25,7 @@ import {
 } from '../src/lib/receipt';
 import { loadBranding } from '../src/lib/branding';
 import { useBranding } from '../src/hooks/useBranding';
-import { BRAND_RED, BRAND_RED_LIGHT } from '../src/lib/brand';
+import { BRAND_BLUE, BRAND_BLUE_LIGHT } from '../src/lib/brand';
 
 export default function Terminal() {
   const [stats, setStats] = useState(null);
@@ -269,9 +269,9 @@ export default function Terminal() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.navBar}>
         <View style={styles.navLeft}>
-          {branding.logoUrl ? (
-            <Image source={{ uri: branding.logoUrl }} style={styles.navLogo} resizeMode="contain" />
-          ) : null}
+          <View style={styles.navMark}>
+            <Text style={styles.navMarkLetter}>P</Text>
+          </View>
           <View style={styles.navTextCol}>
             <Text style={styles.navTitle}>{branding.facilityName || 'Parking'}</Text>
             <Text style={styles.navSub}>{user?.name || user?.email || 'Operator'}</Text>
@@ -333,13 +333,9 @@ export default function Terminal() {
 
         {sessions.length === 0 ? (
           <View style={styles.emptyCard}>
-            {branding.logoUrl ? (
-              <Image source={{ uri: branding.logoUrl }} style={styles.emptyLogo} resizeMode="contain" />
-            ) : (
-              <View style={styles.emptyMark}>
-                <Text style={styles.emptyMarkLetter}>D</Text>
-              </View>
-            )}
+            <View style={styles.emptyMark}>
+              <Text style={styles.emptyMarkLetter}>P</Text>
+            </View>
             <Text style={styles.emptyTitle}>No vehicles</Text>
             <Text style={styles.emptySub}>Check in a car to get started</Text>
           </View>
@@ -391,9 +387,9 @@ export default function Terminal() {
           <SwipeButton
             label="Swipe to Check Out"
             hint="Slide right to confirm"
-            color={BRAND_RED}
+            color={BRAND_BLUE}
             hintColor="rgba(255,255,255,0.65)"
-            completedColor={BRAND_RED}
+            completedColor={BRAND_BLUE}
             onComplete={onCheckOutSwipe}
             disabled={!!pendingCheckOut}
             resetKey={`${checkoutSwipeKey}-${checkoutTarget.id}`}
@@ -459,19 +455,27 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.separator,
   },
   navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  navLogo: { width: 52, height: 44 },
+  navMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: BRAND_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navMarkLetter: { color: '#fff', fontSize: 18, fontWeight: '800', fontFamily: theme.font },
   navTextCol: { flex: 1 },
-  navTitle: { fontSize: 20, fontWeight: '700', color: theme.dark, fontFamily: theme.font, letterSpacing: -0.3 },
-  navSub: { fontSize: 15, color: theme.label, marginTop: 2, fontFamily: theme.font },
+  navTitle: { fontSize: 18, fontWeight: '700', color: theme.dark, fontFamily: theme.font, letterSpacing: -0.3 },
+  navSub: { fontSize: 13, color: theme.label, marginTop: 2, fontFamily: theme.font },
   signOutBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: theme.surface,
+    backgroundColor: BRAND_BLUE_LIGHT,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: BRAND_RED_LIGHT,
+    borderColor: '#BFDBFE',
   },
-  signOutText: { fontSize: 15, fontWeight: '600', color: BRAND_RED, fontFamily: theme.font },
+  signOutText: { fontSize: 14, fontWeight: '600', color: BRAND_BLUE, fontFamily: theme.font },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: theme.space.md, paddingBottom: 32 },
   scrollWithBar: { paddingBottom: 180 },
@@ -483,10 +487,12 @@ const styles = StyleSheet.create({
     marginTop: theme.space.sm,
     marginBottom: theme.space.lg,
     borderLeftWidth: 4,
-    borderLeftColor: BRAND_RED,
+    borderLeftColor: BRAND_BLUE,
+    borderWidth: 1,
+    borderColor: '#E0EAFF',
   },
   heroLabel: { fontSize: 13, fontWeight: '600', color: theme.label, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: theme.font },
-  heroNumber: { fontSize: 56, fontWeight: '700', color: BRAND_RED, marginTop: 4, fontFamily: theme.font, letterSpacing: -2 },
+  heroNumber: { fontSize: 56, fontWeight: '700', color: BRAND_BLUE, marginTop: 4, fontFamily: theme.font, letterSpacing: -2 },
   heroMeta: { flexDirection: 'row', gap: 10, marginTop: theme.space.md },
   chip: { flex: 1, backgroundColor: theme.bg, borderRadius: theme.radius.sm, padding: theme.space.sm },
   chipLabel: { fontSize: 12, color: theme.label, fontWeight: '500', fontFamily: theme.font },
@@ -563,7 +569,7 @@ const styles = StyleSheet.create({
   listRowSelected: { backgroundColor: theme.redBg },
   listMain: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 28 },
   listPlate: { fontSize: 22, fontWeight: '700', color: theme.dark, fontFamily: theme.mono, letterSpacing: 1 },
-  listFee: { fontSize: 17, fontWeight: '600', color: BRAND_RED, fontFamily: theme.font },
+  listFee: { fontSize: 17, fontWeight: '600', color: BRAND_BLUE, fontFamily: theme.font },
   listSub: { flexDirection: 'row', gap: 16, marginTop: 4, paddingRight: 28 },
   listMeta: { fontSize: 13, color: theme.label, fontFamily: theme.font },
   chevron: {
@@ -583,7 +589,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: theme.red,
+    backgroundColor: BRAND_BLUE,
   },
   emptyCard: {
     backgroundColor: theme.surface,
@@ -591,17 +597,16 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
   },
-  emptyLogo: { width: 80, height: 64, marginBottom: 16, opacity: 0.85 },
   emptyMark: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: theme.redBg,
+    borderRadius: 20,
+    backgroundColor: BRAND_BLUE_LIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  emptyMarkLetter: { fontSize: 28, fontWeight: '900', color: BRAND_RED },
+  emptyMarkLetter: { fontSize: 28, fontWeight: '900', color: BRAND_BLUE },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: theme.dark, fontFamily: theme.font },
   emptySub: { fontSize: 15, color: theme.label, marginTop: 4, fontFamily: theme.font },
   bottomSheet: {

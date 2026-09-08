@@ -80,7 +80,7 @@ export default function InstallPrompt() {
 
   if (Platform.OS !== 'web' || !visible || dismissed) return null;
 
-  const name = branding.facilityName || 'Bildhan Parking';
+  const name = branding.facilityName || 'Bildhaan Parking';
 
   return (
     <View style={styles.banner}>
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 200,
-    backgroundColor: '#121212',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 16,
     paddingVertical: 10,
     paddingTop: Platform.OS === 'web' ? 10 : 48,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   subtitle: { color: '#aaa', fontSize: 12, marginTop: 2 },
   actions: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
   installBtn: {
-    backgroundColor: '#B80611',
+    backgroundColor: '#2563EB',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,

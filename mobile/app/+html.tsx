@@ -10,7 +10,7 @@ export default function Root({ children }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#B80611" />
+        <meta name="theme-color" content="#2563EB" />
         <meta name="description" content="Check vehicles in and out. Manage airport parking operations." />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -35,11 +35,13 @@ const responsiveCss = `
     height: 100%;
     margin: 0;
     width: 100%;
-    max-width: 100%;
     overflow: hidden;
   }
+  html {
+    background: #E8F1FF;
+  }
   body {
-    background: #F2F2F7;
+    background: #F4F8FF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
@@ -51,7 +53,17 @@ const responsiveCss = `
     flex-direction: column;
     min-height: 100dvh;
     width: 100%;
-    max-width: 100%;
+  }
+  @media (min-width: 480px) {
+    html, body {
+      height: 100%;
+    }
+    body {
+      max-width: 430px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 18px 50px rgba(37, 99, 235, 0.14);
+    }
   }
   input, textarea, button, select {
     font-family: inherit;

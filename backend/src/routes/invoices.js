@@ -7,7 +7,7 @@ import { renderReceiptPng } from '../utils/receiptRender.js';
 
 const router = Router();
 
-/** Public — used by Dirsha app to save receipt PNG (invoice number is the secret). */
+/** Public — used by the operator app to save receipt PNG (invoice number is the secret). */
 router.get('/number/:number/receipt.png', async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ invoice_number: req.params.number });

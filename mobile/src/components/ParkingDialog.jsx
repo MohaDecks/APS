@@ -124,7 +124,7 @@ function DialogBrandMark({ success, error }) {
 
   return (
     <View style={styles.brandMarkRing}>
-      <Text style={styles.brandMarkLetter}>D</Text>
+      <Text style={styles.brandMarkLetter}>P</Text>
     </View>
   );
 }

@@ -2,7 +2,7 @@ const basePath = process.env.EXPO_PUBLIC_BASE_PATH || '';
 
 export default {
   expo: {
-    name: 'Bildhan Parking',
+    name: 'Bildhaan Parking',
     slug: 'airport-parking',
     version: '1.0.0',
     orientation: 'portrait',
@@ -11,7 +11,7 @@ export default {
     splash: {
       image: './assets/icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#121212',
+      backgroundColor: '#F4F8FF',
     },
     scheme: 'airportparking',
     android: {
@@ -25,11 +25,11 @@ export default {
       bundler: 'metro',
       output: 'single',
       favicon: './public/favicon.png',
-      name: 'Bildhan Parking',
+      name: 'Bildhaan Parking',
       shortName: 'Parking',
       description: 'Check vehicles in and out. Manage airport parking operations.',
-      themeColor: '#B80611',
-      backgroundColor: '#121212',
+      themeColor: '#2563EB',
+      backgroundColor: '#F4F8FF',
       display: 'standalone',
       startUrl: '/',
       scope: '/',

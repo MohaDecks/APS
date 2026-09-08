@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dirsh-parking-v7';
+const CACHE_NAME = 'bildhan-parking-v8';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

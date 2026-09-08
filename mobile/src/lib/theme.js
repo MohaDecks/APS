@@ -1,21 +1,26 @@
 import { Platform } from 'react-native';
-import { BRAND_RED, BRAND_RED_DARK, BRAND_RED_LIGHT, BRAND_DARK } from './brand';
+import {
+  BRAND_BLUE,
+  BRAND_BLUE_DARK,
+  BRAND_BLUE_LIGHT,
+  BRAND_DARK,
+} from './brand';
 
 export const theme = {
-  bg: '#f4f4f5',
+  bg: '#F4F8FF',
   surface: '#FFFFFF',
   dark: BRAND_DARK,
-  label: '#71717a',
-  separator: '#e4e4e7',
-  green: BRAND_RED,
-  greenBg: BRAND_RED_LIGHT,
-  success: BRAND_RED,
-  successBg: BRAND_RED_LIGHT,
-  red: BRAND_RED,
-  redBg: BRAND_RED_LIGHT,
-  primary: BRAND_RED,
-  primaryDark: BRAND_RED_DARK,
-  blue: BRAND_RED,
+  label: '#64748B',
+  separator: '#E2E8F0',
+  green: BRAND_BLUE,
+  greenBg: BRAND_BLUE_LIGHT,
+  success: BRAND_BLUE,
+  successBg: BRAND_BLUE_LIGHT,
+  red: BRAND_BLUE,
+  redBg: BRAND_BLUE_LIGHT,
+  primary: BRAND_BLUE,
+  primaryDark: BRAND_BLUE_DARK,
+  blue: BRAND_BLUE,
   font: Platform.select({
     ios: 'System',
     android: 'Roboto',
@@ -27,9 +32,9 @@ export const theme = {
     default: 'ui-monospace, Menlo, monospace',
   }),
   radius: {
-    sm: 12,
-    md: 16,
-    lg: 20,
+    sm: 14,
+    md: 18,
+    lg: 22,
     xl: 28,
   },
   space: {

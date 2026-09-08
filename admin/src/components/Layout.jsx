@@ -38,7 +38,7 @@ export default function Layout() {
       <aside className="w-64 bg-gradient-to-b from-neutral-950 to-neutral-900 flex flex-col shrink-0 shadow-xl border-r border-red-950/40">
         <div className="p-5 border-b border-neutral-800 flex flex-col items-center text-center">
           <Logo variant="sidebar" theme="dark" />
-          <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">{branding.facilityName || 'Bildhan Parking'}</p>
+          <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">{branding.facilityName || 'Bildhaan Parking'}</p>
         </div>
 
         <p className="px-6 pt-5 pb-2 text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold">Control Panel</p>

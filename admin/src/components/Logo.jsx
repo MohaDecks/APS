@@ -5,8 +5,8 @@ function LogoText({ theme, size = 'compact', facilityName }) {
   const subClass = theme === 'dark' ? 'text-red-300' : 'text-red-600';
   const titleSize = size === 'hero' ? 'text-2xl sm:text-3xl' : size === 'full' ? 'text-lg' : 'text-sm';
   const subSize = size === 'hero' ? 'text-xs sm:text-sm mt-1' : size === 'full' ? 'text-[10px] mt-0.5' : 'text-[9px]';
-  const parts = (facilityName || 'Bildhan Parking').trim().split(/\s+/);
-  const title = (parts[0] || 'Bildhan').toUpperCase();
+  const parts = (facilityName || 'Bildhaan Parking').trim().split(/\s+/);
+  const title = (parts[0] || 'Bildhaan').toUpperCase();
   const subtitle = (parts.slice(1).join(' ') || 'Parking').toUpperCase();
 
   return (

@@ -1,6 +1,6 @@
 {
   "id": "/",
-  "name": "Bildhan Parking",
+  "name": "Bildhaan Parking",
   "short_name": "Parking",
   "description": "Check vehicles in and out. Manage parking operations.",
   "start_url": "/",
@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
-  "background_color": "#121212",
-  "theme_color": "#B80611",
+  "background_color": "#F4F8FF",
+  "theme_color": "#2563EB",
   "lang": "en",
   "dir": "ltr",
   "categories": ["business", "utilities"],

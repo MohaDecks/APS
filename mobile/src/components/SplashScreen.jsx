@@ -1,42 +1,39 @@
 import { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, Animated, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPLASH_BG, BRAND_RED } from '../lib/brand';
+import { SPLASH_BG, BRAND_BLUE, BRAND_BLUE_SOFT, BRAND_NAME } from '../lib/brand';
+import { theme } from '../lib/theme';
 import { useBranding } from '../hooks/useBranding';
+import { splitFacilityName } from '../lib/branding';
 
 export default function SplashScreen() {
   const branding = useBranding(true);
   const fade = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.94)).current;
+  const scale = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 8, tension: 50, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 520, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 8, tension: 54, useNativeDriver: true }),
     ]).start();
   }, [fade, scale]);
 
-  const { logoUrl, facilityName } = branding;
+  const { title, subtitle } = splitFacilityName(branding.facilityName || BRAND_NAME);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
+      <View style={styles.orbTop} />
+      <View style={styles.orbBottom} />
       <View style={styles.container}>
         <Animated.View style={[styles.brand, { opacity: fade, transform: [{ scale }] }]}>
-          {logoUrl ? (
-            <Image
-              source={{ uri: logoUrl }}
-              style={styles.logo}
-              resizeMode="contain"
-              accessibilityLabel={facilityName || 'Bildhan Parking'}
-            />
-          ) : (
-            <View style={styles.placeholder} />
-          )}
+          <View style={styles.mark}>
+            <Text style={styles.markLetter}>P</Text>
+          </View>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </Animated.View>
         <Animated.View style={[styles.footer, { opacity: fade }]}>
-          <ActivityIndicator size="small" color={BRAND_RED} />
+          <ActivityIndicator size="small" color={BRAND_BLUE} />
         </Animated.View>
       </View>
     </SafeAreaView>
@@ -48,23 +45,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: SPLASH_BG,
   },
-  glowTop: {
+  orbTop: {
     position: 'absolute',
-    top: -80,
-    right: -60,
+    top: -90,
+    right: -50,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: BRAND_BLUE_SOFT,
+    opacity: 0.7,
+  },
+  orbBottom: {
+    position: 'absolute',
+    bottom: 40,
+    left: -70,
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(184, 6, 17, 0.12)',
-  },
-  glowBottom: {
-    position: 'absolute',
-    bottom: 80,
-    left: -50,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(184, 6, 17, 0.07)',
+    backgroundColor: '#BFDBFE',
+    opacity: 0.45,
   },
   container: {
     flex: 1,
@@ -76,16 +75,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    width: 220,
-    height: 150,
-    maxWidth: '100%',
+  mark: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    backgroundColor: BRAND_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 22,
+    shadowColor: BRAND_BLUE,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 8,
   },
-  placeholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  markLetter: {
+    color: '#fff',
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1,
+    fontFamily: theme.font,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: theme.dark,
+    letterSpacing: 2.4,
+    fontFamily: theme.font,
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '700',
+    color: BRAND_BLUE,
+    letterSpacing: 4,
+    fontFamily: theme.font,
   },
   footer: {
     position: 'absolute',

@@ -89,7 +89,7 @@ export function DepartedParkingCard({ session, bayNumber }) {
 
 function PlateDisplay({ plate, muted }) {
   const { facilityName } = useBranding();
-  const label = facilityName || 'Bildhan Parking';
+  const label = facilityName || 'Bildhaan Parking';
 
   return (
     <div className={`plate-frame px-4 py-5 text-center ${muted ? 'opacity-70 border-slate-300' : ''}`}>
@@ -118,7 +118,7 @@ function InfoBox({ icon: Icon, label, value, mono }) {
 
 export function EmptyParkingLot() {
   const { facilityName } = useBranding();
-  const label = facilityName || 'Bildhan Parking';
+  const label = facilityName || 'Bildhaan Parking';
 
   return (
     <div className="col-span-full">

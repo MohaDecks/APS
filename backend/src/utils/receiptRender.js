@@ -61,7 +61,7 @@ function logoDataUri(facilityLogoUrl) {
 
 function buildReceiptSvg(invoice) {
   const ticket = invoice.invoice_number || '0000000';
-  const name = invoice.facility_name || 'Bildhan Parking';
+  const name = invoice.facility_name || 'Bildhaan Parking';
   const contact = invoice.payment_phone || '+251 —';
   const logoUri = logoDataUri(invoice.facility_logo_url);
   const payLine = invoice.payment_method_name

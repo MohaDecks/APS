@@ -80,11 +80,11 @@ try {
 try {
   const { default: Settings } = await import('./models/Settings.js');
   const renamed = await Settings.updateMany(
-    { facility_name: { $in: ['Dirsh Parking', 'Dirsha Parking', 'Dirsh'] } },
-    { $set: { facility_name: 'Bildhan Parking' } },
+    { facility_name: { $in: ['Dirsh Parking', 'Dirsha Parking', 'Dirsh', 'Bildhan Parking'] } },
+    { $set: { facility_name: 'Bildhaan Parking' } },
   );
   if (renamed.modifiedCount) {
-    console.log(`Renamed facility to Bildhan Parking (${renamed.modifiedCount})`);
+    console.log(`Renamed facility to Bildhaan Parking (${renamed.modifiedCount})`);
   }
 } catch (e) {
   console.warn('Facility name bootstrap skipped:', e.message);

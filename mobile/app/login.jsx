@@ -8,15 +8,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import api, { saveAuth } from '../src/lib/api';
 import { theme } from '../src/lib/theme';
-import { SPLASH_BG, BRAND_RED, BRAND_RED_DARK } from '../src/lib/brand';
+import { BRAND_BLUE, BRAND_BLUE_SOFT, BRAND_NAME } from '../src/lib/brand';
 import { useBranding } from '../src/hooks/useBranding';
+import { splitFacilityName } from '../src/lib/branding';
 
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
 
@@ -26,6 +26,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { title, subtitle } = splitFacilityName(branding.facilityName || BRAND_NAME);
 
   const handleLogin = async () => {
     if (!username.trim() || !password) return;
@@ -47,8 +48,8 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
+      <View style={styles.orbTop} />
+      <View style={styles.orbBottom} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -60,18 +61,13 @@ export default function Login() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.panel}>
-            {branding.logoUrl ? (
-              <View style={styles.logoWrap}>
-                <Image
-                  source={{ uri: branding.logoUrl }}
-                  style={styles.logo}
-                  resizeMode="contain"
-                  accessibilityLabel={branding.facilityName}
-                />
+            <View style={styles.brandBlock}>
+              <View style={styles.mark}>
+                <Text style={styles.markLetter}>P</Text>
               </View>
-            ) : (
-              <Text style={styles.fallbackTitle}>{branding.facilityName || 'Bildhan Parking'}</Text>
-            )}
+              <Text style={styles.brandTitle}>{title}</Text>
+              <Text style={styles.brandSub}>{subtitle}</Text>
+            </View>
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Operator sign in</Text>
@@ -83,7 +79,7 @@ export default function Login() {
                 value={username}
                 onChangeText={setUsername}
                 placeholder="User name"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
                 autoCorrect={false}
                 {...webInput}
@@ -95,7 +91,7 @@ export default function Login() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Password"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#94A3B8"
                 secureTextEntry
                 {...webInput}
               />
@@ -119,84 +115,108 @@ export default function Login() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: SPLASH_BG,
+    backgroundColor: theme.bg,
   },
   flex: { flex: 1 },
-  glowTop: {
+  orbTop: {
     position: 'absolute',
-    top: -60,
+    top: -70,
     right: -40,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: BRAND_BLUE_SOFT,
+    opacity: 0.75,
+  },
+  orbBottom: {
+    position: 'absolute',
+    bottom: 20,
+    left: -60,
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(184, 6, 17, 0.14)',
-  },
-  glowBottom: {
-    position: 'absolute',
-    bottom: 40,
-    left: -50,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(184, 6, 17, 0.08)',
+    backgroundColor: '#BFDBFE',
+    opacity: 0.4,
   },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingHorizontal: 22,
+    paddingVertical: 28,
   },
   panel: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
   },
-  logoWrap: {
+  brandBlock: {
     alignItems: 'center',
-    marginBottom: 28,
-    paddingHorizontal: 12,
+    marginBottom: 26,
   },
-  logo: {
-    width: 200,
-    height: 130,
-    maxWidth: '100%',
+  mark: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: BRAND_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: BRAND_BLUE,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  fallbackTitle: {
-    textAlign: 'center',
+  markLetter: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 28,
+    fontFamily: theme.font,
+  },
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: theme.dark,
+    letterSpacing: 2,
+    fontFamily: theme.font,
+  },
+  brandSub: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+    color: BRAND_BLUE,
+    letterSpacing: 3.5,
     fontFamily: theme.font,
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 24,
     paddingHorizontal: 22,
     paddingTop: 26,
     paddingBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E0EAFF',
     ...Platform.select({
-      web: { boxShadow: '0 16px 48px rgba(0,0,0,0.35)' },
+      web: { boxShadow: '0 18px 40px rgba(37, 99, 235, 0.12)' },
       default: {
-        shadowColor: '#000',
+        shadowColor: BRAND_BLUE,
         shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.12,
         shadowRadius: 24,
-        elevation: 10,
+        elevation: 8,
       },
     }),
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: theme.dark,
     textAlign: 'center',
     fontFamily: theme.font,
   },
   cardHint: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.label,
     textAlign: 'center',
     marginTop: 6,
     marginBottom: 22,
@@ -205,7 +225,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.label,
     marginBottom: 8,
     marginTop: 4,
     textTransform: 'uppercase',
@@ -213,30 +233,30 @@ const styles = StyleSheet.create({
     fontFamily: theme.font,
   },
   input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFF',
+    borderWidth: 1.5,
+    borderColor: '#DCE7FF',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#0f172a',
+    color: theme.dark,
     marginBottom: 8,
     fontFamily: theme.font,
     ...webInput,
   },
   button: {
-    backgroundColor: BRAND_RED,
-    borderRadius: 14,
+    backgroundColor: BRAND_BLUE,
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 20,
     ...Platform.select({
-      web: { boxShadow: `0 8px 20px ${BRAND_RED}55` },
+      web: { boxShadow: '0 10px 22px rgba(37, 99, 235, 0.32)' },
       default: {
-        shadowColor: BRAND_RED,
+        shadowColor: BRAND_BLUE,
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.35,
+        shadowOpacity: 0.3,
         shadowRadius: 10,
         elevation: 4,
       },

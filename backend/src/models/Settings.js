@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const settingsSchema = new mongoose.Schema(
   {
     hourly_rate: { type: Number, default: 50 },
-    facility_name: { type: String, default: 'Bildhan Parking' },
+    facility_name: { type: String, default: 'Bildhaan Parking' },
     facility_logo_url: { type: String },
   },
   { timestamps: { createdAt: false, updatedAt: 'updated_at' } }

@@ -87,7 +87,7 @@ export default function ReceiptTicket({ invoice }) {
 }
 
 const INK = '#111111';
-const BORDER = '#dc2626';
+const BORDER = '#2563EB';
 
 const styles = StyleSheet.create({
   ticket: {

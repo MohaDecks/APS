@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 8,
     fontWeight: '700',
-    color: '#dc2626',
+    color: '#2563EB',
     letterSpacing: 2,
     marginTop: 4,
   },
@@ -112,6 +112,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
   },
   subtitleDark: {
-    color: '#fca5a5',
+    color: '#93C5FD',
   },
 });
