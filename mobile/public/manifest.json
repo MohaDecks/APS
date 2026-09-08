@@ -1,7 +1,7 @@
 {
   "id": "https://app.bildhaan.dirshay.com/bildhaan-parking",
   "name": "Bildhaan Parking",
-  "short_name": "Bildhaan",
+  "short_name": "Bildhaan Parking",
   "description": "Check vehicles in and out. Manage parking operations.",
   "start_url": "/login",
   "scope": "/",

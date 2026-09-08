@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bildhaan-parking-v10';
+const CACHE_NAME = 'bildhaan-parking-v11';
 const STATIC_ASSETS = [
   '/',
   '/login',
