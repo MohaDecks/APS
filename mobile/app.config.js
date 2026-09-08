@@ -31,7 +31,7 @@ export default {
       themeColor: '#2563EB',
       backgroundColor: '#F4F8FF',
       display: 'standalone',
-      startUrl: '/',
+      startUrl: '/login',
       scope: '/',
       orientation: 'portrait',
       lang: 'en',

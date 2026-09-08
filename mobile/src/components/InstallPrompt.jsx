@@ -31,8 +31,18 @@ export default function InstallButton({ compact = false }) {
   if (Platform.OS !== 'web' || hidden) return null;
 
   const onPress = async () => {
-    const result = await promptInstall();
-    if (result.mode === 'help') setHelp(true);
+    try {
+      const result = await promptInstall();
+      if (result.mode === 'help') {
+        if (/android/i.test(navigator.userAgent)) {
+          window.location.href = 'https://app.bildhaan.dirshay.com/install.html';
+          return;
+        }
+        setHelp(true);
+      }
+    } catch {
+      window.location.href = '/install.html';
+    }
   };
 
   const ios = isIosWeb();

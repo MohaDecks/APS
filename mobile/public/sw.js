@@ -1,6 +1,7 @@
-const CACHE_NAME = 'bildhan-parking-v9';
+const CACHE_NAME = 'bildhaan-parking-v10';
 const STATIC_ASSETS = [
   '/',
+  '/login',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -10,24 +11,29 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.all(
+      STATIC_ASSETS.map((url) => cache.add(url).catch(() => null)),
+    );
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
+    ).then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
-
   if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   if (url.pathname.startsWith('/api')) {
     event.respondWith(networkFirst(request));
@@ -50,7 +56,7 @@ async function cacheFirst(request) {
     return response;
   } catch {
     if (request.mode === 'navigate') {
-      return caches.match('/offline.html');
+      return (await caches.match('/offline.html')) || new Response('Offline', { status: 503 });
     }
     return new Response('Offline', { status: 503 });
   }
@@ -58,8 +64,7 @@ async function cacheFirst(request) {
 
 async function networkFirst(request) {
   try {
-    const response = await fetch(request);
-    return response;
+    return await fetch(request);
   } catch {
     const cached = await caches.match(request);
     return cached || new Response(JSON.stringify({ error: 'Offline' }), {

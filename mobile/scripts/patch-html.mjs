@@ -38,8 +38,11 @@ const manifestPath = join(distDir, 'manifest.json');
 if (existsSync(manifestPath)) {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const p = prefix || '';
-  manifest.start_url = `${p}/`;
-  manifest.scope = `${p}/`;
+  manifest.start_url = manifest.start_url || `${p}/login`;
+  if (p) {
+    manifest.start_url = `${p}/login`;
+    manifest.scope = `${p}/`;
+  }
   if (Array.isArray(manifest.icons)) {
     manifest.icons = manifest.icons.map((icon) => ({
       ...icon,
@@ -65,6 +68,7 @@ if (existsSync(swPath)) {
       '/icons/apple-touch-icon.png',
       '/favicon.png',
       '/offline.html',
+      '/install.html',
     ];
     for (const path of paths) {
       sw = sw.replaceAll(`'${path}'`, `'${prefix}${path === '/' ? '/' : path}'`);
