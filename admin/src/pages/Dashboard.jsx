@@ -44,7 +44,7 @@ export default function Dashboard() {
                 {branding.logoUrl ? (
                   <img src={branding.logoUrl} alt="" className="h-8 w-auto object-contain" />
                 ) : null}
-                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-red-400">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400">
                   <Radio className="w-3 h-3" />
                   Live Operations
                 </span>
@@ -55,8 +55,8 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 backdrop-blur-sm">
-              <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
-                <Car className="w-6 h-6 text-red-400" />
+              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <Car className="w-6 h-6 text-blue-400" />
               </div>
               <div>
                 <p className="text-4xl font-black text-white tabular-nums leading-none">{parked}</p>
@@ -69,7 +69,7 @@ export default function Dashboard() {
 
       <div className="p-8 max-w-7xl">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard icon={Car} label="Parked Now" value={parked} accent="text-red-600" highlight />
+          <StatCard icon={Car} label="Parked Now" value={parked} accent="text-blue-600" highlight />
           <StatCard icon={LogIn} label="Check-ins Today" value={stats?.today_checkins ?? '—'} />
           <StatCard icon={LogOut} label="Check-outs Today" value={stats?.today_checkouts ?? '—'} />
           <StatCard icon={Banknote} label="Revenue Today" value={stats ? formatETB(stats.today_revenue) : '—'} accent="text-neutral-900" />
@@ -105,12 +105,12 @@ function StatCard({ icon: Icon, label, value, accent, highlight }) {
   return (
     <div className={`rounded-2xl p-5 border transition-all hover:shadow-md ${
       highlight
-        ? 'bg-gradient-to-br from-red-50 to-white border-red-200/80 shadow-sm'
+        ? 'bg-gradient-to-br from-blue-50 to-white border-blue-200/80 shadow-sm'
         : 'bg-white border-neutral-200/80'
     }`}>
       <div className="flex items-center gap-2 mb-3">
-        <div className={`p-2 rounded-xl ${highlight ? 'bg-red-100' : 'bg-neutral-100'}`}>
-          <Icon className={`w-4 h-4 ${highlight ? 'text-red-600' : 'text-neutral-500'}`} />
+        <div className={`p-2 rounded-xl ${highlight ? 'bg-blue-100' : 'bg-neutral-100'}`}>
+          <Icon className={`w-4 h-4 ${highlight ? 'text-blue-600' : 'text-neutral-500'}`} />
         </div>
         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
       </div>

@@ -85,12 +85,12 @@ export default function Settings() {
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
                 disabled={!canEdit}
-                className="w-40 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-slate-50 disabled:text-slate-500"
+                className="w-40 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
               <span className="text-sm text-slate-400">ETB / hour</span>
             </div>
             <p className="text-sm text-slate-400 mt-3">
-              Preview: a 3-hour stay would cost <strong className="text-red-600">{preview}</strong>.
+              Preview: a 3-hour stay would cost <strong className="text-blue-600">{preview}</strong>.
             </p>
           </div>
 
@@ -104,7 +104,7 @@ export default function Settings() {
               value={facilityName}
               onChange={(e) => setFacilityName(e.target.value)}
               disabled={!canEdit}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-5 disabled:bg-slate-50 disabled:text-slate-500"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-5 disabled:bg-slate-50 disabled:text-slate-500"
             />
 
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Receipt logo</label>

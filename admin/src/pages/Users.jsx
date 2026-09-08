@@ -14,7 +14,7 @@ const emptyForm = {
 };
 
 const inputCls =
-  'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-white';
+  'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -219,7 +219,7 @@ export default function Users() {
                   <td className="px-6 py-4 font-semibold text-slate-800">{u.name}</td>
                   <td className="px-6 py-4 text-slate-500">{u.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${u.role === 'admin' ? 'bg-neutral-900 text-white' : 'bg-red-50 text-red-700'}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${u.role === 'admin' ? 'bg-neutral-900 text-white' : 'bg-blue-50 text-blue-700'}`}>
                       {u.role}
                     </span>
                   </td>
@@ -246,7 +246,7 @@ export default function Users() {
                       <button type="button" onClick={() => openEdit(u)} className="text-slate-300 hover:text-slate-600 transition-colors">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button type="button" onClick={() => handleDelete(u.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                      <button type="button" onClick={() => handleDelete(u.id)} className="text-slate-300 hover:text-blue-600 transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -272,7 +272,7 @@ function Toggle({ label, hint, on, onChange }) {
         <span className="block text-sm font-medium text-slate-800">{label}</span>
         {hint ? <span className="block text-xs text-slate-400 mt-0.5">{hint}</span> : null}
       </span>
-      <span className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${on ? 'bg-red-500' : 'bg-slate-300'}`}>
+      <span className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${on ? 'bg-blue-500' : 'bg-slate-300'}`}>
         <span
           className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
             on ? 'translate-x-4' : 'translate-x-0'

@@ -34,8 +34,8 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      <aside className="w-64 bg-gradient-to-b from-neutral-950 to-neutral-900 flex flex-col shrink-0 shadow-xl border-r border-red-950/40">
+    <div className="flex min-h-screen bg-[#F4F8FF]">
+      <aside className="w-64 bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 flex flex-col shrink-0 shadow-xl border-r border-blue-900/40">
         <div className="p-5 border-b border-neutral-800 flex flex-col items-center text-center">
           <Logo variant="sidebar" theme="dark" />
           <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">{branding.facilityName || 'Bildhaan Parking'}</p>
@@ -89,7 +89,7 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `block px-3 py-2 rounded-lg text-sm transition-all ${
                         isActive
-                          ? 'bg-red-600 text-white font-semibold'
+                          ? 'bg-blue-600 text-white font-semibold'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }

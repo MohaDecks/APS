@@ -14,6 +14,13 @@ export default function Invoice() {
   if (!invoice) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Text style={styles.backArrow}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.pageTitle}>Receipt</Text>
+          <View style={styles.backBtnSpacer} />
+        </View>
         <Text style={styles.emptyText}>No invoice data</Text>
       </SafeAreaView>
     );
@@ -47,8 +54,14 @@ export default function Invoice() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>‹</Text>
+        </TouchableOpacity>
         <Text style={styles.pageTitle}>Receipt</Text>
+        <View style={styles.backBtnSpacer} />
+      </View>
+      <ScrollView contentContainerStyle={styles.content}>
 
         <View style={styles.receipt}>
           {logoUri ? (
@@ -112,9 +125,29 @@ function Row({ label, value, bold, mono }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bg },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: theme.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.separator,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnSpacer: { width: 40, height: 40 },
+  backArrow: { color: '#2563EB', fontSize: 28, fontWeight: '600', marginTop: -2, lineHeight: 30 },
   content: { padding: theme.space.lg },
   emptyText: { textAlign: 'center', marginTop: 60, color: theme.label, fontFamily: theme.font },
-  pageTitle: { fontSize: 34, fontWeight: '700', color: theme.dark, marginBottom: theme.space.lg, fontFamily: theme.font, letterSpacing: -0.5 },
+  pageTitle: { fontSize: 18, fontWeight: '700', color: theme.dark, fontFamily: theme.font },
   receipt: { backgroundColor: theme.surface, borderRadius: theme.radius.lg, padding: theme.space.lg, borderWidth: 2, borderColor: theme.red },
   facilityLogo: { width: '100%', height: 56, marginBottom: 8 },
   facility: { fontSize: 20, fontWeight: '700', textAlign: 'center', color: theme.dark, fontFamily: theme.font },

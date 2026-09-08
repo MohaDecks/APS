@@ -24,7 +24,7 @@ const emptyForm = {
 };
 
 const inputCls =
-  'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent';
+  'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
 
 export default function PaymentMethods() {
   const canEdit = canUpdatePayments();
@@ -244,7 +244,7 @@ export default function PaymentMethods() {
                       <button type="button" onClick={() => openEdit(item)} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button type="button" onClick={() => handleDelete(item)} className="p-2 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500">
+                      <button type="button" onClick={() => handleDelete(item)} className="p-2 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -361,7 +361,7 @@ function Toggle({ label, on, onChange }) {
       className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/80"
     >
       <span className="text-sm font-medium text-slate-700">{label}</span>
-      <span className={`relative w-10 h-6 rounded-full transition-colors ${on ? 'bg-red-500' : 'bg-slate-300'}`}>
+      <span className={`relative w-10 h-6 rounded-full transition-colors ${on ? 'bg-blue-500' : 'bg-slate-300'}`}>
         <span
           className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
             on ? 'translate-x-4' : 'translate-x-0'

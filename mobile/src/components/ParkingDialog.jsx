@@ -146,9 +146,9 @@ export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, 
       onRequestClose={isSuccess ? onDone : loading ? undefined : onCancel}
     >
       <DialogBrandMark success={isSuccess} />
-      <Text style={styles.dialogTitle}>{isSuccess ? 'Checked In!' : 'Confirm Check In'}</Text>
+      <Text style={styles.dialogTitle}>{isSuccess ? 'Car added' : 'Add car'}</Text>
       <Text style={styles.dialogSub}>
-        {isSuccess ? 'Vehicle is now on premises' : 'This vehicle will be registered on premises'}
+        {isSuccess ? 'This car is now parked' : 'This car will be registered'}
       </Text>
 
       <View style={styles.plateCard}>
@@ -170,7 +170,7 @@ export function CheckInBottomSheet({ visible, plate, phase, loading, onConfirm, 
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryBtnText}>Confirm Check In</Text>
+              <Text style={styles.primaryBtnText}>Confirm</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>
@@ -206,8 +206,8 @@ export function ConfirmCheckOutDialog({
   return (
     <SlideUpDialog visible={visible} onRequestClose={loading ? undefined : onCancel} variant="sheet">
       <DialogBrandMark />
-      <Text style={styles.dialogTitle}>Confirm Check Out</Text>
-      <Text style={styles.dialogSub}>Vehicle is leaving the premises</Text>
+      <Text style={styles.dialogTitle}>Leave</Text>
+      <Text style={styles.dialogSub}>This car is leaving</Text>
 
       <View style={styles.plateCard}>
         <Text style={styles.plateLabel}>PLATE</Text>
@@ -273,7 +273,7 @@ export function ConfirmCheckOutDialog({
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.primaryBtnText}>Confirm Check Out</Text>
+          <Text style={styles.primaryBtnText}>Confirm</Text>
         )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.ghostBtn} onPress={onCancel} disabled={loading}>

@@ -1,12 +1,27 @@
 import { useBranding } from '../lib/branding';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
 export default function PageHeader({ badge, title, subtitle, children }) {
   const { logoUrl, facilityName } = useBranding();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const showBack = location.pathname !== '/dashboard';
 
   return (
     <div className="border-b border-slate-200 bg-white px-8 py-6">
       <div className="flex items-start justify-between gap-4 max-w-7xl">
         <div className="flex items-start gap-4 min-w-0">
+          {showBack && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="mt-0.5 w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-100"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
           {logoUrl && (
             <img
               src={logoUrl}

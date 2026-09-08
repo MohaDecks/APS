@@ -2,7 +2,7 @@ import { useBranding } from '../lib/branding';
 
 function LogoText({ theme, size = 'compact', facilityName }) {
   const titleClass = theme === 'dark' ? 'text-white' : 'text-slate-900';
-  const subClass = theme === 'dark' ? 'text-red-300' : 'text-red-600';
+  const subClass = theme === 'dark' ? 'text-blue-300' : 'text-blue-600';
   const titleSize = size === 'hero' ? 'text-2xl sm:text-3xl' : size === 'full' ? 'text-lg' : 'text-sm';
   const subSize = size === 'hero' ? 'text-xs sm:text-sm mt-1' : size === 'full' ? 'text-[10px] mt-0.5' : 'text-[9px]';
   const parts = (facilityName || 'Bildhaan Parking').trim().split(/\s+/);

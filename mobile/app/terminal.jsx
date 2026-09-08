@@ -269,32 +269,35 @@ export default function Terminal() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.navBar}>
         <View style={styles.navLeft}>
-          <View style={styles.navMark}>
-            <Text style={styles.navMarkLetter}>P</Text>
-          </View>
+          {checkoutTarget ? (
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => { setCheckoutTarget(null); setCheckoutSwipeKey((k) => k + 1); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.backArrow}>‹</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.navMark}>
+              <Text style={styles.navMarkLetter}>P</Text>
+            </View>
+          )}
           <View style={styles.navTextCol}>
-            <Text style={styles.navTitle}>{branding.facilityName || 'Parking'}</Text>
-            <Text style={styles.navSub}>{user?.name || user?.email || 'Operator'}</Text>
+            <Text style={styles.navTitle} numberOfLines={1}>{branding.facilityName || 'Parking'}</Text>
+            <Text style={styles.navSub} numberOfLines={1}>{user?.name || user?.email || 'Operator'}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.7}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          checkoutTarget && !pendingCheckOut && styles.scrollWithBar,
-          pendingCheckOut && styles.scrollWithConfirm,
-        ]}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.blue} />}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.heroCard}>
-          <Text style={styles.heroLabel}>Vehicles on premises</Text>
+          <Text style={styles.heroLabel}>Cars</Text>
           <Text style={styles.heroNumber}>{stats?.currently_parked ?? 0}</Text>
           <View style={styles.heroMeta}>
             <MetaChip label="Today" value={stats ? formatETB(stats.today_revenue) : '—'} />
@@ -302,7 +305,7 @@ export default function Terminal() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Check In</Text>
+        <Text style={styles.sectionTitle}>Car</Text>
         <View style={styles.listGroup}>
           <View style={styles.checkInRow}>
             <TextInput
@@ -320,8 +323,8 @@ export default function Terminal() {
           </View>
           <View style={styles.checkInSwipe}>
             <SwipeButton
-              label="Swipe to Check In"
-              hint="Slide right to confirm"
+              label="Swipe to add"
+              hint="Slide right"
               onComplete={onCheckInSwipe}
               disabled={!plate.trim() || !!checkInSheet}
               resetKey={`${swipeKey}-${plate}`}
@@ -329,15 +332,15 @@ export default function Terminal() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>On Premises ({sessions.length})</Text>
+        <Text style={styles.sectionTitle}>Cars ({sessions.length})</Text>
 
         {sessions.length === 0 ? (
           <View style={styles.emptyCard}>
             <View style={styles.emptyMark}>
               <Text style={styles.emptyMarkLetter}>P</Text>
             </View>
-            <Text style={styles.emptyTitle}>No vehicles</Text>
-            <Text style={styles.emptySub}>Check in a car to get started</Text>
+            <Text style={styles.emptyTitle}>No cars</Text>
+            <Text style={styles.emptySub}>Add a car to get started</Text>
           </View>
         ) : (
           <View style={styles.listGroup}>
@@ -373,20 +376,19 @@ export default function Terminal() {
       </ScrollView>
 
       {checkoutTarget && !pendingCheckOut && (
-        <SafeAreaView style={styles.bottomSheet} edges={['bottom']}>
-          <View style={styles.sheetHandle} />
+        <View style={styles.checkoutBar}>
           <View style={styles.sheetHeader}>
             <View>
-              <Text style={styles.sheetLabel}>Check Out</Text>
+              <Text style={styles.sheetLabel}>Car</Text>
               <Text style={styles.sheetPlate}>{checkoutTarget.plate}</Text>
             </View>
             <TouchableOpacity style={styles.sheetClose} onPress={() => { setCheckoutTarget(null); setCheckoutSwipeKey((k) => k + 1); }}>
-              <Text style={styles.sheetCloseText}>✕</Text>
+              <Text style={styles.backArrow}>‹</Text>
             </TouchableOpacity>
           </View>
           <SwipeButton
-            label="Swipe to Check Out"
-            hint="Slide right to confirm"
+            label="Swipe to leave"
+            hint="Slide right"
             color={BRAND_BLUE}
             hintColor="rgba(255,255,255,0.65)"
             completedColor={BRAND_BLUE}
@@ -394,8 +396,14 @@ export default function Terminal() {
             disabled={!!pendingCheckOut}
             resetKey={`${checkoutSwipeKey}-${checkoutTarget.id}`}
           />
-        </SafeAreaView>
+        </View>
       )}
+
+      <SafeAreaView style={styles.footer} edges={['bottom']}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.7}>
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
 
       <CheckInBottomSheet
         visible={!!checkInSheet}
@@ -448,13 +456,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.sm,
-    backgroundColor: theme.bg,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: 10,
+    backgroundColor: theme.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.separator,
   },
-  navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: BRAND_BLUE_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backArrow: { color: BRAND_BLUE, fontSize: 28, fontWeight: '600', marginTop: -2, lineHeight: 30 },
   navMark: {
     width: 40,
     height: 40,
@@ -469,31 +486,30 @@ const styles = StyleSheet.create({
   navSub: { fontSize: 13, color: theme.label, marginTop: 2, fontFamily: theme.font },
   signOutBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 12,
     backgroundColor: BRAND_BLUE_LIGHT,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#BFDBFE',
+    alignItems: 'center',
   },
-  signOutText: { fontSize: 14, fontWeight: '600', color: BRAND_BLUE, fontFamily: theme.font },
+  signOutText: { fontSize: 15, fontWeight: '700', color: BRAND_BLUE, fontFamily: theme.font },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: theme.space.md, paddingBottom: 32 },
-  scrollWithBar: { paddingBottom: 180 },
-  scrollWithConfirm: { paddingBottom: 32 },
+  scrollContent: { paddingHorizontal: theme.space.md, paddingTop: 10, paddingBottom: 20 },
   heroCard: {
     backgroundColor: theme.surface,
     borderRadius: theme.radius.lg,
-    padding: theme.space.lg,
-    marginTop: theme.space.sm,
-    marginBottom: theme.space.lg,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: 12,
+    marginBottom: 12,
     borderLeftWidth: 4,
     borderLeftColor: BRAND_BLUE,
     borderWidth: 1,
     borderColor: '#E0EAFF',
   },
-  heroLabel: { fontSize: 13, fontWeight: '600', color: theme.label, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: theme.font },
-  heroNumber: { fontSize: 56, fontWeight: '700', color: BRAND_BLUE, marginTop: 4, fontFamily: theme.font, letterSpacing: -2 },
-  heroMeta: { flexDirection: 'row', gap: 10, marginTop: theme.space.md },
+  heroLabel: { fontSize: 11, fontWeight: '600', color: theme.label, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: theme.font },
+  heroNumber: { fontSize: 40, fontWeight: '700', color: BRAND_BLUE, marginTop: 2, fontFamily: theme.font, letterSpacing: -2 },
+  heroMeta: { flexDirection: 'row', gap: 8, marginTop: 8 },
   chip: { flex: 1, backgroundColor: theme.bg, borderRadius: theme.radius.sm, padding: theme.space.sm },
   chipLabel: { fontSize: 12, color: theme.label, fontWeight: '500', fontFamily: theme.font },
   chipValue: { fontSize: 17, fontWeight: '600', color: theme.dark, marginTop: 4, fontFamily: theme.font },
@@ -515,27 +531,27 @@ const styles = StyleSheet.create({
     marginBottom: theme.space.lg,
   },
   checkInRow: {
-    paddingVertical: 28,
+    paddingVertical: 12,
     paddingHorizontal: theme.space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.separator,
     alignItems: 'center',
   },
   checkInPlateInput: {
-    fontSize: 34,
+    fontSize: 26,
     fontWeight: '800',
     color: theme.dark,
     fontFamily: theme.mono,
     letterSpacing: 3,
-    paddingVertical: 4,
+    paddingVertical: 2,
     textAlign: 'center',
     width: '100%',
     ...webInput,
   },
   checkInSwipe: {
     paddingHorizontal: theme.space.md,
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   plateInput: {
     backgroundColor: theme.bg,
@@ -594,7 +610,7 @@ const styles = StyleSheet.create({
   emptyCard: {
     backgroundColor: theme.surface,
     borderRadius: theme.radius.lg,
-    paddingVertical: 48,
+    paddingVertical: 28,
     alignItems: 'center',
   },
   emptyMark: {
@@ -609,33 +625,24 @@ const styles = StyleSheet.create({
   emptyMarkLetter: { fontSize: 28, fontWeight: '900', color: BRAND_BLUE },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: theme.dark, fontFamily: theme.font },
   emptySub: { fontSize: 15, color: theme.label, marginTop: 4, fontFamily: theme.font },
-  bottomSheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+  checkoutBar: {
     backgroundColor: theme.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0EAFF',
     paddingHorizontal: theme.space.md,
-    paddingTop: theme.space.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
-  sheetHandle: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.separator,
-    alignSelf: 'center',
-    marginBottom: theme.space.sm,
+  footer: {
+    backgroundColor: theme.surface,
+    borderTopWidth: 1,
+    borderTopColor: '#E0EAFF',
+    paddingHorizontal: theme.space.md,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.space.md },
-  sheetLabel: { fontSize: 13, color: theme.label, fontWeight: '600', fontFamily: theme.font },
-  sheetPlate: { fontSize: 24, fontWeight: '700', color: theme.dark, fontFamily: theme.mono, letterSpacing: 1, marginTop: 2 },
-  sheetClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center' },
-  sheetCloseText: { fontSize: 14, color: theme.label, fontWeight: '600' },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sheetLabel: { fontSize: 12, color: theme.label, fontWeight: '600', fontFamily: theme.font },
+  sheetPlate: { fontSize: 20, fontWeight: '700', color: theme.dark, fontFamily: theme.mono, letterSpacing: 1, marginTop: 1 },
+  sheetClose: { width: 40, height: 40, borderRadius: 14, backgroundColor: BRAND_BLUE_LIGHT, alignItems: 'center', justifyContent: 'center' },
 });

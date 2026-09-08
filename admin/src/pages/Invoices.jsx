@@ -87,17 +87,17 @@ export default function Invoices() {
                 value={plate}
                 onChange={(e) => setPlate(e.target.value)}
                 placeholder="SEARCH BY PLATE"
-                className="w-full border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">From</label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">To</label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <button type="button" onClick={setToday} className="flex items-center gap-1.5 border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">
             <Calendar className="w-4 h-4" />
@@ -122,11 +122,11 @@ export default function Invoices() {
                   <button
                     key={inv.id}
                     onClick={() => setSelected(inv)}
-                    className={`w-full text-left px-5 py-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${selected?.id === inv.id ? 'bg-red-50/60 border-l-4 border-l-red-500' : ''}`}
+                    className={`w-full text-left px-5 py-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${selected?.id === inv.id ? 'bg-blue-50/60 border-l-4 border-l-blue-500' : ''}`}
                   >
                     <div className="flex justify-between items-center">
                       <span className="font-mono font-bold text-slate-900">{inv.plate}</span>
-                      <span className="font-bold text-red-600">{formatETB(inv.total_fee)}</span>
+                      <span className="font-bold text-blue-600">{formatETB(inv.total_fee)}</span>
                     </div>
                     <p className="text-xs text-slate-400 mt-1">{inv.invoice_number} · {inv.created_at?.slice(0, 10)}</p>
                   </button>
@@ -154,7 +154,7 @@ export default function Invoices() {
                   )}
                   <div className="border-t border-slate-200 pt-3 mt-3 bg-neutral-950 rounded-xl px-4 py-3 flex justify-between items-center">
                     <span className="text-slate-400 text-xs font-bold uppercase">Total</span>
-                    <span className="font-black text-xl text-red-400">{formatETB(selected.total_fee)}</span>
+                    <span className="font-black text-xl text-blue-400">{formatETB(selected.total_fee)}</span>
                   </div>
                   {selected.issued_by_name && <Row label="Issued by" value={selected.issued_by_name} />}
                 </div>
