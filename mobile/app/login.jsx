@@ -17,6 +17,7 @@ import { theme } from '../src/lib/theme';
 import { BRAND_BLUE, BRAND_BLUE_SOFT, BRAND_NAME } from '../src/lib/brand';
 import { useBranding } from '../src/hooks/useBranding';
 import { splitFacilityName } from '../src/lib/branding';
+import InstallButton from '../src/components/InstallPrompt';
 
 const webInput = Platform.OS === 'web' ? { outlineStyle: 'none' } : {};
 
@@ -104,6 +105,9 @@ export default function Login() {
               >
                 <Text style={styles.buttonText}>{loading ? 'Signing in…' : 'Sign In'}</Text>
               </TouchableOpacity>
+              <View style={styles.installWrap}>
+                <InstallButton />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -270,4 +274,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     fontFamily: theme.font,
   },
+  installWrap: { marginTop: 12 },
 });

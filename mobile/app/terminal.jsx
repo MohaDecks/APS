@@ -26,6 +26,7 @@ import {
 import { loadBranding } from '../src/lib/branding';
 import { useBranding } from '../src/hooks/useBranding';
 import { BRAND_BLUE, BRAND_BLUE_LIGHT } from '../src/lib/brand';
+import InstallButton from '../src/components/InstallPrompt';
 
 export default function Terminal() {
   const [stats, setStats] = useState(null);
@@ -400,9 +401,12 @@ export default function Terminal() {
       )}
 
       <SafeAreaView style={styles.footer} edges={['bottom']}>
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.7}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.footerRow}>
+          <InstallButton compact />
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.7}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
 
       <CheckInBottomSheet
@@ -640,6 +644,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.space.md,
     paddingTop: 8,
     paddingBottom: 8,
+  },
+  footerRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
+  signOutBtn: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: BRAND_BLUE_LIGHT,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sheetLabel: { fontSize: 12, color: theme.label, fontWeight: '600', fontFamily: theme.font },

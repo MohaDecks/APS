@@ -18,6 +18,8 @@ export default function Root({ children }) {
         <meta name="apple-mobile-web-app-title" content="Parking" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: responsiveCss }} />
@@ -83,6 +85,10 @@ const responsiveCss = `
 `;
 
 const swRegister = `
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__deferredInstall = e;
+  });
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(() => {});

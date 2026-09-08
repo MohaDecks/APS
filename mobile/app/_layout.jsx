@@ -4,8 +4,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppShell from '../src/components/AppShell';
-import InstallPrompt from '../src/components/InstallPrompt';
 import { registerServiceWorker, ensurePwaMeta } from '../src/lib/pwa';
+import { setupInstallCapture } from '../src/components/InstallPrompt';
 import { loadBranding } from '../src/lib/branding';
 import { initEmbeddedMode } from '../src/lib/receipt';
 import { theme } from '../src/lib/theme';
@@ -17,6 +17,7 @@ export default function RootLayout() {
       initEmbeddedMode();
       ensurePwaMeta();
       registerServiceWorker();
+      setupInstallCapture();
     }
   }, []);
 
@@ -24,7 +25,6 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppShell>
         <View style={styles.root}>
-          <InstallPrompt />
           <View style={styles.content}>
             <StatusBar style="dark" />
             <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
