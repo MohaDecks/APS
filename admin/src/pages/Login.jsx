@@ -49,7 +49,7 @@ export default function Login() {
             Terminal car parking operations
           </h2>
           <p className="text-slate-400 mt-4 max-w-sm text-base leading-relaxed">
-            Monitor live parking bays, track revenue, and manage operator accounts for {branding.facilityName || 'Dirsh Parking'}.
+            Monitor live parking bays, track revenue, and manage operator accounts for {branding.facilityName || 'Bildhan Parking'}.
           </p>
 
           <div className="mt-10 grid grid-cols-3 gap-3 max-w-md">

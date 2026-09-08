@@ -2,7 +2,7 @@ const basePath = process.env.EXPO_PUBLIC_BASE_PATH || '';
 
 export default {
   expo: {
-    name: 'Dirsh Parking',
+    name: 'Bildhan Parking',
     slug: 'airport-parking',
     version: '1.0.0',
     orientation: 'portrait',
@@ -25,7 +25,7 @@ export default {
       bundler: 'metro',
       output: 'single',
       favicon: './public/favicon.png',
-      name: 'Dirsh Parking',
+      name: 'Bildhan Parking',
       shortName: 'Parking',
       description: 'Check vehicles in and out. Manage airport parking operations.',
       themeColor: '#B80611',

@@ -1,5 +1,5 @@
-/** Dirsha brand — matches Safe-Fare-Bus / Dirsha mobile (#B80611). */
-export const BRAND_NAME = 'Dirsha Parking';
+/** Bildhan brand. */
+export const BRAND_NAME = 'Bildhan Parking';
 
 export const SPLASH_BG = '#B80611';
 export const SPLASH_DURATION_MS = 6000;

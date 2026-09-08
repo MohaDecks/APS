@@ -80,7 +80,7 @@ export default function InstallPrompt() {
 
   if (Platform.OS !== 'web' || !visible || dismissed) return null;
 
-  const name = branding.facilityName || 'Dirsh Parking';
+  const name = branding.facilityName || 'Bildhan Parking';
 
   return (
     <View style={styles.banner}>

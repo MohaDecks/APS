@@ -10,7 +10,7 @@ export default function PageHeader({ badge, title, subtitle, children }) {
           {logoUrl && (
             <img
               src={logoUrl}
-              alt={facilityName || 'Dirsh Parking'}
+              alt={facilityName || 'Bildhan Parking'}
               className="h-12 w-auto max-w-[140px] object-contain shrink-0 mt-0.5"
             />
           )}

@@ -4,7 +4,7 @@ import api, { resolveAssetUrl } from './api';
 const CACHE_KEY = 'facility_branding';
 
 let memory = {
-  facilityName: 'Dirsh Parking',
+  facilityName: 'Bildhan Parking',
   logoUrl: null,
   loaded: false,
 };
@@ -28,7 +28,7 @@ export async function loadBranding(force = false) {
       if (raw) {
         const cached = JSON.parse(raw);
         memory = {
-          facilityName: cached.facilityName || 'Dirsh Parking',
+          facilityName: cached.facilityName || 'Bildhan Parking',
           logoUrl: resolveAssetUrl(cached.logoPath),
           loaded: memory.loaded,
         };
@@ -41,7 +41,7 @@ export async function loadBranding(force = false) {
   try {
     const { data } = await api.get('/settings/branding');
     memory = {
-      facilityName: data.facility_name || 'Dirsh Parking',
+      facilityName: data.facility_name || 'Bildhan Parking',
       logoUrl: resolveAssetUrl(data.facility_logo_url),
       loaded: true,
     };
@@ -58,7 +58,7 @@ export async function loadBranding(force = false) {
       if (raw) {
         const cached = JSON.parse(raw);
         memory = {
-          facilityName: cached.facilityName || 'Dirsh Parking',
+          facilityName: cached.facilityName || 'Bildhan Parking',
           logoUrl: resolveAssetUrl(cached.logoPath),
           loaded: true,
         };
@@ -72,7 +72,7 @@ export async function loadBranding(force = false) {
 }
 
 export function splitFacilityName(name) {
-  const trimmed = (name || 'Dirsh Parking').trim();
+  const trimmed = (name || 'Bildhan Parking').trim();
   const parts = trimmed.split(/\s+/);
   if (parts.length >= 2) {
     return {

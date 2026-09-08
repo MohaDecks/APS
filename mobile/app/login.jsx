@@ -70,7 +70,7 @@ export default function Login() {
                 />
               </View>
             ) : (
-              <Text style={styles.fallbackTitle}>{branding.facilityName || 'Dirsh Parking'}</Text>
+              <Text style={styles.fallbackTitle}>{branding.facilityName || 'Bildhan Parking'}</Text>
             )}
 
             <View style={styles.card}>

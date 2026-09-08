@@ -30,7 +30,7 @@ export default function Dashboard() {
   }, [fetchData]);
 
   const parked = stats?.currently_parked ?? 0;
-  const lotName = branding.facilityName || 'Dirsh Parking';
+  const lotName = branding.facilityName || 'Bildhan Parking';
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-100 to-zinc-50">

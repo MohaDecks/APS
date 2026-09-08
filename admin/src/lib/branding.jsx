@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import api from './api';
 
 const BrandingContext = createContext({
-  facilityName: 'Dirsh Parking',
+  facilityName: 'Bildhan Parking',
   logoUrl: null,
   loaded: false,
   refreshBranding: async () => {},
@@ -10,7 +10,7 @@ const BrandingContext = createContext({
 
 export function BrandingProvider({ children }) {
   const [branding, setBranding] = useState({
-    facilityName: 'Dirsh Parking',
+    facilityName: 'Bildhan Parking',
     logoUrl: null,
     loaded: false,
   });
@@ -19,7 +19,7 @@ export function BrandingProvider({ children }) {
     try {
       const { data } = await api.get('/settings/branding');
       setBranding({
-        facilityName: data.facility_name || 'Dirsh Parking',
+        facilityName: data.facility_name || 'Bildhan Parking',
         logoUrl: data.facility_logo_url || null,
         loaded: true,
       });
@@ -47,11 +47,11 @@ export async function loadBranding() {
   try {
     const { data } = await api.get('/settings/branding');
     return {
-      facilityName: data.facility_name || 'Dirsh Parking',
+      facilityName: data.facility_name || 'Bildhan Parking',
       logoUrl: data.facility_logo_url || null,
       loaded: true,
     };
   } catch {
-    return { facilityName: 'Dirsh Parking', logoUrl: null, loaded: false };
+    return { facilityName: 'Bildhan Parking', logoUrl: null, loaded: false };
   }
 }

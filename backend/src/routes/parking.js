@@ -15,7 +15,7 @@ async function getSettings() {
   if (!settings) {
     settings = await Settings.create({
       hourly_rate: 50,
-      facility_name: 'Dirsh Parking',
+      facility_name: 'Bildhan Parking',
     });
   }
   return settings;

@@ -77,6 +77,19 @@ try {
   console.warn('Permission bootstrap skipped:', e.message);
 }
 
+try {
+  const { default: Settings } = await import('./models/Settings.js');
+  const renamed = await Settings.updateMany(
+    { facility_name: { $in: ['Dirsh Parking', 'Dirsha Parking', 'Dirsh'] } },
+    { $set: { facility_name: 'Bildhan Parking' } },
+  );
+  if (renamed.modifiedCount) {
+    console.log(`Renamed facility to Bildhan Parking (${renamed.modifiedCount})`);
+  }
+} catch (e) {
+  console.warn('Facility name bootstrap skipped:', e.message);
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Airport Parking API running on http://0.0.0.0:${PORT}`);
 });

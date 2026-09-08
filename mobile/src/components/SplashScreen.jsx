@@ -29,7 +29,7 @@ export default function SplashScreen() {
               source={{ uri: logoUrl }}
               style={styles.logo}
               resizeMode="contain"
-              accessibilityLabel={facilityName || 'Dirsh Parking'}
+              accessibilityLabel={facilityName || 'Bildhan Parking'}
             />
           ) : (
             <View style={styles.placeholder} />
