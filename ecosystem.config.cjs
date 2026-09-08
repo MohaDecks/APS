@@ -25,6 +25,7 @@ module.exports = {
       cwd: path.join(root, 'backend'),
       script: 'src/index.js',
       interpreter: 'node',
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       watch: false,
