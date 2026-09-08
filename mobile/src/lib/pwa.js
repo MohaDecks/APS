@@ -14,7 +14,7 @@ export function registerServiceWorker() {
   const swUrl = `${base}/sw.js`;
   const scope = base ? `${base}/` : '/';
 
-  window.addEventListener('load', async () => {
+  const start = async () => {
     try {
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const reg of regs) {
@@ -26,11 +26,16 @@ export function registerServiceWorker() {
     } catch {
       /* ignore */
     }
-    navigator.serviceWorker
-      .register(swUrl, { scope, updateViaCache: 'none' })
-      .then((reg) => reg.update())
-      .catch(() => {});
-  });
+    try {
+      const reg = await navigator.serviceWorker.register(swUrl, { scope, updateViaCache: 'none' });
+      await reg.update();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start);
 }
 
 export function ensurePwaMeta() {

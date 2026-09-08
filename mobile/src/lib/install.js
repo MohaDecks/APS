@@ -1,4 +1,4 @@
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 
 let deferredPrompt = typeof window !== 'undefined' ? window.__deferredInstall || null : null;
 const listeners = new Set();
@@ -31,7 +31,7 @@ export function isIosWeb() {
 }
 
 export function canNativeInstall() {
-  return !!deferredPrompt;
+  return !!deferredPrompt || !!(typeof window !== 'undefined' && window.__deferredInstall);
 }
 
 export function captureInstallEvents() {
@@ -39,6 +39,7 @@ export function captureInstallEvents() {
 
   if (window.__deferredInstall && !deferredPrompt) {
     deferredPrompt = window.__deferredInstall;
+    notify();
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -50,26 +51,31 @@ export function captureInstallEvents() {
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
+    window.__deferredInstall = null;
     notify();
   });
 }
 
 export async function promptInstall() {
-  if (isStandalone()) return { ok: true, installed: true };
+  if (isStandalone()) return { ok: true, installed: true, mode: 'already' };
 
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    notify();
-    return { ok: choice.outcome === 'accepted', installed: choice.outcome === 'accepted' };
+  const event = deferredPrompt || (typeof window !== 'undefined' ? window.__deferredInstall : null);
+  if (event) {
+    try {
+      event.prompt();
+      const choice = await event.userChoice;
+      deferredPrompt = null;
+      window.__deferredInstall = null;
+      notify();
+      return {
+        ok: choice.outcome === 'accepted',
+        installed: choice.outcome === 'accepted',
+        mode: 'native',
+      };
+    } catch {
+      return { ok: false, installed: false, mode: 'help' };
+    }
   }
 
-  if (isIosWeb()) {
-    Alert.alert('Install app', 'Tap Share, then Add to Home Screen.');
-    return { ok: false, installed: false };
-  }
-
-  Alert.alert('Install app', 'Open the browser menu and tap Install app / Add to Home screen.');
-  return { ok: false, installed: false };
+  return { ok: false, installed: false, mode: 'help' };
 }
